@@ -8,8 +8,8 @@ This project implements a retrieval-focused RAG system designed for healthcare d
 
 - Extracts and cleans text from cardiology documents
 - Splits documents into meaningful chunks with overlap for context preservation
-- Converts text chunks into vector embeddings using sentence transformers
-- Indexes embeddings in a FAISS vector database for fast similarity search
+- Converts text chunks into vector embeddings using TF-IDF
+- Indexes embeddings using cosine similarity for fast semantic search
 - Verifies retrieval quality through automated test queries
 
 ## Project Structure
@@ -27,7 +27,8 @@ Rag-system-4-healthcare/
 │   └── vector_db.py           # Embedding generation and vector database
 ├── scripts/
 │   ├── ingest.py              # Document ingestion pipeline
-│   └── verify_retrieval.py    # Retrieval quality verification
+│   ├── verify_retrieval.py    # Retrieval quality verification
+│   └── demo.py                # Quick demonstration script
 ├── requirements.txt           # Python dependencies
 └── README.md
 ```
@@ -57,7 +58,7 @@ python scripts/ingest.py
 
 This will:
 - Extract text from all `.txt` files in `data/cardiology/`
-- Clean and split text into chunks (500 characters with 50 character overlap)
+- Clean and split text into chunks (800 characters with 100 character overlap)
 - Generate TF-IDF embeddings
 - Build a searchable index
 - Save the index to the `index/` directory
@@ -89,8 +90,8 @@ The script also offers an optional interactive search mode where you can enter c
 ### Document Processing
 
 - **Text Extraction**: Reads text files and preserves structure
-- **Cleaning**: Normalizes whitespace and line breaks
-- **Chunking**: Splits documents at sentence boundaries with configurable chunk size (default: 500 characters) and overlap (default: 50 characters)
+- **Cleaning**: Normalizes whitespace while preserving paragraph breaks
+- **Chunking**: Splits documents at paragraph boundaries with configurable chunk size (default: 800 characters) and overlap (default: 100 characters)
 
 ### Embeddings
 
