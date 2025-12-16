@@ -114,8 +114,19 @@ class VectorDatabase:
         
         Args:
             path: Directory path to load the index from
+            
+        Raises:
+            FileNotFoundError: If the index file doesn't exist
         """
-        with open(os.path.join(path, 'index.pkl'), 'rb') as f:
+        index_file = os.path.join(path, 'index.pkl')
+        
+        if not os.path.exists(index_file):
+            raise FileNotFoundError(
+                f"Index file not found at {index_file}. "
+                "Please run the ingestion script first."
+            )
+        
+        with open(index_file, 'rb') as f:
             data = pickle.load(f)
             self.vectorizer = data['vectorizer']
             self.document_vectors = data['document_vectors']
