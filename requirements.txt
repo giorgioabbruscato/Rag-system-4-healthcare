@@ -1,0 +1,3 @@
+# Core dependencies for minimal RAG prototype
+scikit-learn>=1.0.0
+numpy>=1.24.3

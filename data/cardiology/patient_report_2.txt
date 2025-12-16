@@ -1,0 +1,112 @@
+CARDIOLOGY CONSULTATION REPORT
+
+Patient: Mary Williams (ID: 67890)
+Date: February 3, 2024
+Attending Physician: Dr. Michael Chen, MD FACC
+
+CHIEF COMPLAINT:
+Chest pain with exertion
+
+HISTORY OF PRESENT ILLNESS:
+58-year-old female presents with 2-month history of substernal chest pressure occurring with moderate exertion (walking uphill, climbing stairs). Pain resolves with rest after 5-10 minutes. No associated shortness of breath, nausea, or diaphoresis. No symptoms at rest. Patient concerned about recent family history of premature coronary artery disease (brother had MI at age 52).
+
+PAST MEDICAL HISTORY:
+- Hypertension
+- Hyperlipidemia
+- Postmenopausal (age 52)
+- Family history of CAD
+
+MEDICATIONS:
+- Amlodipine 5 mg daily
+- Rosuvastatin 20 mg daily
+
+PHYSICAL EXAMINATION:
+Vital Signs: BP 138/84 mmHg, HR 72 bpm, RR 16, O2 Sat 98% on room air
+General: Well-appearing, no distress
+Cardiovascular: Regular rate and rhythm, no murmurs, rubs, or gallops, normal S1/S2
+Pulmonary: Clear to auscultation bilaterally
+Abdomen: Soft, non-tender
+Extremities: No edema, pulses 2+ throughout
+
+DIAGNOSTIC STUDIES:
+
+Electrocardiogram:
+- Normal sinus rhythm at 72 bpm
+- No ST-T wave abnormalities
+- No pathological Q waves
+
+Exercise Stress Test:
+- Bruce protocol: 7 minutes, 8 METS
+- Stopped due to chest pain and fatigue
+- Maximum heart rate: 142 bpm (87% of predicted)
+- Peak BP: 168/88 mmHg
+- 1.5 mm horizontal ST depression in leads V4-V6 at peak exercise
+- Chest pain reproduced during test, resolved in recovery
+- Interpretation: Positive for inducible ischemia
+
+Laboratory Results:
+- Total cholesterol: 198 mg/dL
+- LDL: 118 mg/dL
+- HDL: 58 mg/dL
+- Triglycerides: 110 mg/dL
+- Hemoglobin A1c: 5.6%
+- Creatinine: 0.9 mg/dL
+
+ASSESSMENT:
+Stable angina pectoris, Canadian Cardiovascular Society Class II
+Positive stress test concerning for obstructive coronary artery disease
+
+PLAN:
+1. Medical management:
+   - Start aspirin 81 mg daily
+   - Start metoprolol succinate 25 mg daily
+   - Continue rosuvastatin, goal LDL <70 mg/dL
+   - Continue amlodipine for blood pressure control
+   - Initiate sublingual nitroglycerin as needed for chest pain
+
+2. Diagnostic evaluation:
+   - Coronary angiography recommended given positive stress test
+   - Discussed risks and benefits with patient
+   - Patient agrees to proceed
+
+3. Risk factor modification:
+   - Dietary counseling (Mediterranean diet)
+   - Regular exercise program (cardiac rehabilitation referral)
+   - Optimize blood pressure control (goal <130/80 mmHg)
+   - Continue statin therapy
+
+4. Follow-up:
+   - Schedule coronary angiography within 2 weeks
+   - Follow-up after procedure to discuss results and further management
+
+CORONARY ANGIOGRAPHY RESULTS (performed February 15, 2024):
+- Left main: Normal
+- LAD: 70% stenosis in mid-segment
+- LCx: 40% stenosis in proximal segment (non-obstructive)
+- RCA: 30% stenosis in mid-segment (non-obstructive)
+- Left ventriculography: Normal LV function, EF 60%
+
+INTERVENTION:
+- Successful drug-eluting stent placement to mid-LAD lesion
+- Excellent angiographic result
+- No complications
+
+POST-PROCEDURE PLAN:
+1. Dual antiplatelet therapy:
+   - Aspirin 81 mg daily (indefinitely)
+   - Ticagrelor 90 mg twice daily (minimum 12 months)
+
+2. Continue medical therapy:
+   - Metoprolol succinate 25 mg daily
+   - Rosuvastatin 20 mg daily
+   - Amlodipine 5 mg daily
+
+3. Cardiac rehabilitation enrollment
+
+4. Follow-up in 1 month for assessment and medication titration
+
+PROGNOSIS:
+Excellent prognosis with successful revascularization and optimal medical therapy. Patient counseled on importance of medication adherence, particularly dual antiplatelet therapy, and lifestyle modifications.
+
+Dr. Michael Chen, MD FACC
+Cardiology

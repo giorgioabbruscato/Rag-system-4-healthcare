@@ -1,0 +1,97 @@
+CARDIOLOGY CONSULTATION REPORT
+
+Patient: John Smith (ID: 12345)
+Date: January 15, 2024
+Attending Physician: Dr. Sarah Johnson, MD FACC
+
+CHIEF COMPLAINT:
+Shortness of breath and lower extremity swelling for 3 weeks
+
+HISTORY OF PRESENT ILLNESS:
+67-year-old male with history of hypertension and type 2 diabetes presents with progressive dyspnea on exertion and bilateral lower extremity edema over the past 3 weeks. Patient reports orthopnea (requires 3 pillows to sleep) and paroxysmal nocturnal dyspnea. Denies chest pain, palpitations, or syncope. Reports 8-pound weight gain over this period.
+
+PAST MEDICAL HISTORY:
+- Hypertension (15 years)
+- Type 2 Diabetes Mellitus (10 years)
+- Hyperlipidemia
+- Former smoker (quit 5 years ago, 30 pack-year history)
+
+MEDICATIONS:
+- Lisinopril 20 mg daily
+- Metformin 1000 mg twice daily
+- Atorvastatin 40 mg daily
+- Aspirin 81 mg daily
+
+PHYSICAL EXAMINATION:
+Vital Signs: BP 145/92 mmHg, HR 98 bpm, RR 22, O2 Sat 92% on room air, Temp 98.6°F
+General: Alert, oriented, in mild respiratory distress
+Cardiovascular: Regular rhythm, S3 gallop present, JVP elevated at 12 cm, no murmurs
+Pulmonary: Bilateral basilar crackles
+Abdomen: Soft, non-tender, no hepatomegaly
+Extremities: 2+ pitting edema bilaterally to mid-shin level
+
+DIAGNOSTIC STUDIES:
+
+Electrocardiogram:
+- Sinus rhythm at 98 bpm
+- Left ventricular hypertrophy
+- No acute ST-T wave changes
+
+Chest X-ray:
+- Cardiomegaly
+- Bilateral pulmonary vascular congestion
+- Small bilateral pleural effusions
+
+Echocardiogram:
+- Left ventricular ejection fraction: 30%
+- Moderate left ventricular dilation
+- Global hypokinesis
+- Mild mitral regurgitation
+- Estimated right ventricular systolic pressure: 45 mmHg
+
+Laboratory Results:
+- BNP: 890 pg/mL (normal <100)
+- Troponin I: 0.02 ng/mL (negative)
+- Creatinine: 1.4 mg/dL (baseline 1.1)
+- eGFR: 52 mL/min/1.73m²
+- Sodium: 136 mEq/L
+- Potassium: 4.2 mEq/L
+- Hemoglobin: 12.8 g/dL
+
+ASSESSMENT:
+New-onset heart failure with reduced ejection fraction (HFrEF), NYHA Class III
+
+Likely etiology: Ischemic vs. hypertensive cardiomyopathy
+
+PLAN:
+1. Initiate guideline-directed medical therapy:
+   - Start carvedilol 3.125 mg twice daily, titrate as tolerated
+   - Continue lisinopril, monitor renal function and potassium
+   - Add furosemide 40 mg daily for diuresis
+   - Start spironolactone 25 mg daily (potassium and renal function permitting)
+
+2. Dietary modifications:
+   - Sodium restriction to <2 g/day
+   - Daily weight monitoring
+   - Fluid restriction to 1.5-2 L/day
+
+3. Further evaluation:
+   - Consider coronary angiography to evaluate for ischemic etiology
+   - Optimize diabetes and blood pressure control
+
+4. Follow-up:
+   - Recheck labs (BMP, BNP) in 1 week
+   - Cardiology follow-up in 2 weeks
+   - Repeat echocardiogram in 3 months after optimization of medical therapy
+
+5. Patient education:
+   - Signs and symptoms of worsening HF
+   - Medication compliance
+   - Lifestyle modifications
+   - When to seek emergency care
+
+PROGNOSIS:
+Discussed with patient the chronic nature of heart failure and importance of medication adherence and lifestyle modifications. With optimal medical therapy, symptoms should improve.
+
+Dr. Sarah Johnson, MD FACC
+Cardiology

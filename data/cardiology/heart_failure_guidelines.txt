@@ -1,0 +1,70 @@
+ACC/AHA Guideline for the Management of Heart Failure
+
+INTRODUCTION
+
+Heart failure (HF) is a complex clinical syndrome that results from any structural or functional impairment of ventricular filling or ejection of blood. The cardinal manifestations of HF are dyspnea and fatigue, which may limit exercise tolerance, and fluid retention, which may lead to pulmonary and peripheral edema.
+
+CLASSIFICATION OF HEART FAILURE
+
+Heart failure is classified into several categories:
+
+1. HF with Reduced Ejection Fraction (HFrEF): Left ventricular ejection fraction (LVEF) ≤40%
+2. HF with Preserved Ejection Fraction (HFpEF): LVEF ≥50%
+3. HF with Mildly Reduced Ejection Fraction (HFmrEF): LVEF 41-49%
+
+DIAGNOSTIC CRITERIA
+
+The diagnosis of heart failure requires:
+- Signs and symptoms consistent with HF
+- Objective evidence of cardiac structural and/or functional abnormality
+- In cases of diagnostic uncertainty, elevated natriuretic peptide levels or evidence of pulmonary or systemic congestion
+
+Key diagnostic tests include:
+- Echocardiography for assessment of cardiac structure and function
+- B-type natriuretic peptide (BNP) or N-terminal pro-BNP (NT-proBNP) measurement
+- Electrocardiogram (ECG)
+- Chest X-ray
+- Complete blood count, serum electrolytes, blood urea nitrogen, creatinine, glucose, liver function tests
+
+MANAGEMENT RECOMMENDATIONS
+
+Pharmacological Treatment for HFrEF:
+- ACE inhibitors or ARBs for all patients unless contraindicated
+- Beta-blockers (carvedilol, metoprolol succinate, or bisoprolol) for all stable patients
+- Mineralocorticoid receptor antagonists (spironolactone or eplerenone) for patients with NYHA class II-IV
+- Diuretics for fluid retention
+- SGLT2 inhibitors (dapagliflozin or empagliflozin) for additional mortality benefit
+- ARNI (sacubitril/valsartan) can replace ACE inhibitor/ARB in appropriate patients
+
+Device Therapy:
+- Implantable cardioverter-defibrillator (ICD) for primary prevention in patients with LVEF ≤35%
+- Cardiac resynchronization therapy (CRT) for patients with LVEF ≤35%, sinus rhythm, LBBB, and QRS ≥150 ms
+
+Lifestyle Modifications:
+- Sodium restriction (<2-3 g/day)
+- Fluid restriction in advanced HF (1.5-2 L/day)
+- Regular physical activity and cardiac rehabilitation
+- Weight monitoring
+- Smoking cessation
+- Limit alcohol intake
+
+FOLLOW-UP AND MONITORING
+
+Patients should be monitored for:
+- Symptoms and functional status
+- Volume status and weight
+- Vital signs including heart rate and blood pressure
+- Laboratory tests including electrolytes, renal function, and natriuretic peptides
+- Medication adherence and tolerance
+- Device function if applicable
+
+PROGNOSIS
+
+Prognosis varies based on:
+- Ejection fraction and severity of symptoms
+- Underlying etiology
+- Response to therapy
+- Presence of comorbidities
+- Adherence to treatment recommendations
+
+Five-year mortality remains high at approximately 50% despite optimal medical therapy, emphasizing the need for continued research and improved treatment strategies.
