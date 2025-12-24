@@ -73,6 +73,13 @@ def build_case_card(meta: dict) -> str:
         txt += f"Duration: {meta['effective_duration']} s. "
     if meta.get("heart_rate") is not None:
         txt += f"Heart rate (device): {meta['heart_rate']} bpm. "
+    if meta.get("mean_intensity") is not None:
+        txt += f" Mean intensity: {meta['mean_intensity']:.4f}."
+    if meta.get("motion_energy") is not None:
+        txt += f" Motion energy: {meta['motion_energy']:.4f}."
+    if meta.get("motion_std") is not None:
+        txt += f" Motion std: {meta['motion_std']:.4f}."
+
     txt += "Findings: not provided (metadata-only)."
     return txt
 
@@ -108,6 +115,52 @@ def export_representative_frames(ds, case_id: str, n=10):
     except Exception:
         return []
 
+def compute_simple_video_features(ds, max_frames=64):
+    """
+    Estrae feature semplici dal cine US:
+    - mean_intensity: media intensità normalizzata
+    - motion_energy: differenza media tra frame consecutivi
+    - motion_std: deviazione standard del movimento
+    """
+    try:
+        arr = ds.pixel_array  # shape: (frames, H, W) o (frames, H, W, 3)
+        num_frames = int(safe_get(ds, "NumberOfFrames", 1))
+        if num_frames <= 1:
+            return {}
+
+        # sottocampiona per velocità
+        use_n = min(num_frames, max_frames)
+        idxs = np.linspace(0, num_frames - 1, use_n, dtype=int)
+        x = arr[idxs]
+
+        # se colore -> converti a grayscale semplice (mean sui canali)
+        if x.ndim == 4 and x.shape[-1] == 3:
+            x = x.mean(axis=-1)
+
+        x = x.astype(np.float32)
+
+        # normalizza [0,1] se sembra 8-bit
+        maxv = x.max()
+        if maxv > 1.5:
+            x = x / 255.0
+
+        mean_intensity = float(x.mean())
+
+        # movimento: differenza assoluta tra frame consecutivi
+        diffs = np.abs(x[1:] - x[:-1])
+        motion_per_step = diffs.mean(axis=(1, 2))  # (use_n-1,)
+        motion_energy = float(motion_per_step.mean())
+        motion_std = float(motion_per_step.std())
+
+        return {
+            "mean_intensity": mean_intensity,
+            "motion_energy": motion_energy,
+            "motion_std": motion_std,
+            "feature_frames_used": int(use_n)
+        }
+    except Exception:
+        return {}
+
 # clean build
 open(JSONL_PATH, "w", encoding="utf-8").close()
 labels_rows = []
@@ -132,11 +185,14 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
         ds = pydicom.dcmread(fpath)
 
         case_id = make_case_id(ds, fpath)
+        view = safe_get(ds, "ViewName", None) or safe_get(ds, "View", None) or safe_get(ds, "SeriesDescription",                                                                     None) or "Unknown"
+        stage = safe_get(ds, "StageName", None) or safe_get(ds, "ProtocolName", None) or "Unknown"
+
+
 
         meta = {
             "case_id": case_id,
 
-            # label only on metadata
             "diagnosis_label_raw": label_folder,
             "diagnosis_label_short": lm["short"],
             "diagnosis_label_pretty": lm["pretty"],
@@ -145,8 +201,8 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
             "source_path": f"{label_folder}/{fname}",
             "modality": safe_get(ds, "Modality"),
             "sop_class_uid": str(safe_get(ds, "SOPClassUID")),
-            "view": safe_get(ds, "ViewName", "Unknown"),
-            "stage": safe_get(ds, "StageName", "Unknown"),
+            "view": view,
+            "stage": stage,
             "num_frames": int(safe_get(ds, "NumberOfFrames", 1)),
             "fps": safe_get(ds, "CineRate", safe_get(ds, "RecommendedDisplayFrameRate", None)),
             "effective_duration": safe_get(ds, "EffectiveDuration", None),
@@ -157,6 +213,10 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
             "columns": safe_get(ds, "Columns", None),
             "photometric": safe_get(ds, "PhotometricInterpretation", None),
         }
+        feat = compute_simple_video_features(ds)
+        meta.update(feat)
+
+        meta = {k: v for k, v in meta.items() if v is not None}
 
         # 1) index case-card (neutral)
         case_doc = {
@@ -167,7 +227,7 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
             f.write(json.dumps(case_doc, ensure_ascii=False) + "\n")
 
         # 2) frames (optional)
-        frames = export_representative_frames(ds, case_id, n=5)
+        frames = export_representative_frames(ds, case_id, n=10)
         for fr in frames:
             fr_doc = {
                 "content": f"Representative ultrasound frame from cine loop. View: {meta['view']}, Stage: {meta['stage']}.",
@@ -183,7 +243,7 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
             "label_short": lm["short"],
             "label_pretty": lm["pretty"],
             "group": lm["group"],
-            "file": meta["source_path"]
+            "file": f"{label_folder}/{fname}"
         })
 
 with open(LABELS_CSV, "w", newline="", encoding="utf-8") as cf:
