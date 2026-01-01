@@ -22,7 +22,7 @@ def uniform_indices(num_frames: int, n: int):
 
 
 def to_rgb_if_needed(ds, frame):
-    """Convert DICOM color space to RGB when needed (common in US: YBR_FULL_422)."""
+    """Convert DICOM color space to RGB when needed (common in US: YBR_FULL_422)...."""
     photometric = getattr(ds, "PhotometricInterpretation", None)
     # Many ultrasound cine loops are already RGB or YBR_FULL_422
     if photometric == "YBR_FULL_422" and frame.ndim == 3 and frame.shape[-1] == 3:
