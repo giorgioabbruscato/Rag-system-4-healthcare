@@ -1,24 +1,24 @@
 """
 multimodal_rag_openai.py
 
-True multimodal RAG for cardiology:
-- Input: report text + (optional) current exam frames (sampled from cine/video)
-- Retrieval: similar cases (Chroma "cases") + optional guidelines (Chroma "guidelines")
-- Reasoning: GPT-4o (vision + text) using retrieved context and images
+True multimodal RAG for cardiology (text + images + video sampled as frames):
+- Input: report text + optional current exam frames folder (sampled frames)
+- Retrieval: similar cases (Chroma "cases") + guidelines (Chroma "guidelines", optional)
+- Reasoning: GPT-4o (vision + text) using retrieved context + images
 - Output: suggested diagnosis + differential + evidence + missing info + sources
 
 Assumptions:
-- You already built and indexed:
-  - cases collection in Chroma at: data/dataset_built/chroma_db
-  - each case has metadata including "diagnosis_label_raw" (for kNN vote)
-- You have frames saved at: data/dataset_built/images/<case_id>/frame_*.png
-- You indexed the cases with SentenceTransformers "all-MiniLM-L6-v2"
+- Chroma DB at: data/dataset_built/chroma_db
+- cases collection exists
+- guidelines collection exists (optional)
+- frames stored at: data/dataset_built/images/<case_id>/frame_*.png
+- embeddings: all-MiniLM-L6-v2 (SentenceTransformers)
 
 Requirements:
 pip install openai python-dotenv chromadb sentence-transformers pillow numpy
 
 Env:
-OPENAI_API_KEY in your environment or .env file
+OPENAI_API_KEY in your environment or .env
 """
 
 import os
@@ -29,7 +29,6 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 
-
 # ----------------------------
 # Config
 # ----------------------------
@@ -37,39 +36,32 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "dataset_built"))
 CHROMA_DIR = os.path.join(DATA_DIR, "chroma_db")
 
-# Same embedding model used for indexing
 EMB_MODEL = "all-MiniLM-L6-v2"
 embedder = SentenceTransformer(EMB_MODEL)
 
-# Retrieval
 TOPK_CASES = 5
 TOPK_GUIDES = 4
 
-# Visual evidence
-FRAMES_PER_SIMILAR_CASE = 3        # frames taken from each retrieved similar case
-MAX_QUERY_FRAMES = 12              # max frames from the current exam to send
-MAX_SIMILAR_FRAMES_TOTAL = 12      # cap to avoid huge prompts
+FRAMES_PER_SIMILAR_CASE = 3
+MAX_QUERY_FRAMES = 12
+MAX_SIMILAR_FRAMES_TOTAL = 12
 
-# OpenAI vision model
 MODEL_VISION = "gpt-4o"
 
 client = OpenAI()
-
 
 # ----------------------------
 # Helpers
 # ----------------------------
 def image_to_data_url(path: str) -> str:
-    """Encode local image file as a data URL for OpenAI image input."""
+    """Encode local image as data URL for OpenAI image input."""
     with open(path, "rb") as f:
         b = f.read()
     b64 = base64.b64encode(b).decode("utf-8")
     mime = "image/png" if path.lower().endswith(".png") else "image/jpeg"
     return f"data:{mime};base64,{b64}"
 
-
 def uniform_sample(items: List[str], n: int) -> List[str]:
-    """Uniformly sample n items from a list (keeps order-ish)."""
     if n <= 0:
         return []
     if len(items) <= n:
@@ -78,31 +70,22 @@ def uniform_sample(items: List[str], n: int) -> List[str]:
     idxs = np.linspace(0, len(items) - 1, n, dtype=int)
     return [items[i] for i in idxs]
 
-
-def list_frames_in_folder(folder: str) -> List[str]:
+def list_frames_in_folder(folder: Optional[str]) -> List[str]:
     if not folder or not os.path.isdir(folder):
         return []
     exts = (".png", ".jpg", ".jpeg")
-    frames = sorted(
+    return sorted(
         os.path.join(folder, f)
         for f in os.listdir(folder)
         if f.lower().endswith(exts)
     )
-    return frames
-
 
 def pick_frames_for_case(case_id: str, n: int) -> List[str]:
-    """Pick up to n frames from a stored case folder."""
     case_dir = os.path.join(DATA_DIR, "images", case_id)
     frames = list_frames_in_folder(case_dir)
     return uniform_sample(frames, n)
 
-
-def retrieve_by_text(
-    collection,
-    query_text: str,
-    k: int
-) -> Dict[str, Any]:
+def retrieve_by_text(collection, query_text: str, k: int) -> Dict[str, Any]:
     q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()
     return collection.query(
         query_embeddings=q_emb,
@@ -110,16 +93,11 @@ def retrieve_by_text(
         include=["documents", "metadatas", "distances"]
     )
 
-
 def knn_vote_labels(
     case_metas: List[Dict[str, Any]],
     case_dists: List[float],
     topn: int = 3
 ) -> List[Tuple[str, float]]:
-    """
-    Weighted vote over retrieved case labels (metadata only).
-    Weight = 1/(1+dist). Returns top-n labels with scores.
-    """
     scores: Dict[str, float] = {}
     for meta, dist in zip(case_metas, case_dists):
         lab = meta.get("diagnosis_label_raw", "unknown")
@@ -128,14 +106,11 @@ def knn_vote_labels(
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return ranked[:topn]
 
-
 def get_collection_safe(chroma: chromadb.PersistentClient, name: str):
-    """Return collection if it exists; otherwise None."""
     try:
         return chroma.get_collection(name)
     except Exception:
         return None
-
 
 # ----------------------------
 # Prompting
@@ -155,6 +130,7 @@ Rules:
 - If evidence is insufficient, state it explicitly and list what is missing.
 - Provide confidence: low / medium / high, with a short justification.
 - Separate evidence from text vs evidence from images.
+- For each key claim, cite either a CASE (case_id) or a GUIDELINE (source+chunk).
 - Always include a Sources section:
   - list case_id(s) used
   - list guideline sources/chunks if present
@@ -163,18 +139,17 @@ Output format:
 1) Suggested diagnosis (confidence)
 2) Differential (2 alternatives) + why
 3) Evidence (bullets)
-   - From report/context
+   - From report/retrieved context
    - From images/frames
 4) Missing info / recommended next checks
 5) Sources
 """
 
-
 def build_user_payload(
     report_text: str,
     knn_candidates: List[Tuple[str, float]],
     cases_res: Dict[str, Any],
-    guides_res: Optional[Dict[str, Any]]
+    guides_res: Optional[Dict[str, Any]],
 ) -> str:
     diag_lines = "\n".join([f"- {lab}: score={sc:.3f}" for lab, sc in knn_candidates])
 
@@ -191,14 +166,24 @@ def build_user_payload(
             f"{case_docs[i]}\n"
         )
 
-    guides_block = "(no guideline index found)"
-    if guides_res is not None:
+    if guides_res is None:
+        guides_block = "(no guidelines retrieved)"
+    else:
         guides_block = ""
-        for i in range(len(guides_res["ids"][0])):
-            meta = guides_res["metadatas"][0][i]
+        g_ids = guides_res["ids"][0]
+        g_docs = guides_res["documents"][0]
+        g_metas = guides_res["metadatas"][0]
+        g_dists = guides_res["distances"][0]
+
+        for i in range(len(g_ids)):
+            meta = g_metas[i]
             src = meta.get("source", "unknown")
-            chunk = meta.get("chunk", "?")
-            guides_block += f"\n[GUIDELINE {src} chunk={chunk}]\n{guides_res['documents'][0][i]}\n"
+            # support both chunk_id and chunk
+            chunk = meta.get("chunk_id", meta.get("chunk", "?"))
+            guides_block += (
+                f"\n[GUIDELINE {src} chunk={chunk} dist={g_dists[i]:.4f}]\n"
+                f"{g_docs[i]}\n"
+            )
 
     return f"""CLINICAL REPORT:
 {report_text}
@@ -213,7 +198,6 @@ RETRIEVED GUIDELINES:
 {guides_block}
 """
 
-
 # ----------------------------
 # Main pipeline
 # ----------------------------
@@ -222,12 +206,6 @@ def run_multimodal_rag(
     query_frames_folder: Optional[str] = None,
     query_frame_paths: Optional[List[str]] = None,
 ) -> str:
-    """
-    report_text: pasted clinical report text
-    query_frames_folder: optional folder path containing sampled frames for the current exam
-    query_frame_paths: optional explicit list of image paths (overrides folder)
-    """
-
     chroma = chromadb.PersistentClient(path=CHROMA_DIR)
     cases_col = chroma.get_collection("cases")
     guides_col = get_collection_safe(chroma, "guidelines")
@@ -235,56 +213,54 @@ def run_multimodal_rag(
     # 1) Retrieve similar cases from report text
     cases_res = retrieve_by_text(cases_col, report_text, TOPK_CASES)
 
-    # 2) kNN vote over retrieved labels (metadata)
+    # 2) Retrieve guidelines (optional)
+    guides_res = None
+    if guides_col is not None:
+        guides_res = retrieve_by_text(guides_col, report_text, TOPK_GUIDES)
+
+    # 3) kNN vote over retrieved labels
     knn_candidates = knn_vote_labels(
         cases_res["metadatas"][0],
         cases_res["distances"][0],
         topn=3
     )
 
-    # 3) Retrieve guidelines (optional)
-    guides_res = None
-    if guides_col is not None:
-        guides_res = retrieve_by_text(guides_col, report_text, TOPK_GUIDES)
-
-    # 4) Collect images:
-    # 4a) Current exam frames (query) - user-provided
+    # 4) Current exam frames (query) - user-provided
     if query_frame_paths is None:
-        query_frame_paths = list_frames_in_folder(query_frames_folder) if query_frames_folder else []
+        query_frame_paths = list_frames_in_folder(query_frames_folder)
     query_frame_paths = uniform_sample(query_frame_paths, MAX_QUERY_FRAMES)
 
-    # 4b) Evidence frames from similar cases
+    # 5) Supporting frames from similar cases
     case_ids = cases_res["ids"][0]
     similar_frames: List[str] = []
     for cid in case_ids:
         similar_frames.extend(pick_frames_for_case(cid, FRAMES_PER_SIMILAR_CASE))
     similar_frames = uniform_sample(similar_frames, MAX_SIMILAR_FRAMES_TOTAL)
 
-    # 5) Build user text context
+    # 6) Build user text context
     user_text = build_user_payload(report_text, knn_candidates, cases_res, guides_res)
 
-    # 6) Build multimodal content: text + images
+    # 7) Build multimodal content: text + images
     content: List[Dict[str, Any]] = [{"type": "input_text", "text": user_text}]
 
-    # Add current exam frames first (most important)
+    # Add current exam frames first
     for p in query_frame_paths:
         content.append({"type": "input_image", "image_url": image_to_data_url(p)})
 
-    # Add a limited number of similar-case frames as supporting evidence
+    # Add similar-case frames
     for p in similar_frames:
         content.append({"type": "input_image", "image_url": image_to_data_url(p)})
 
-    # 7) Call OpenAI (vision model)
+    # 8) Call OpenAI
     resp = client.responses.create(
         model=MODEL_VISION,
         input=[
-            {"role": "system", "sscontent": SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": content},
         ],
         max_output_tokens=900,
     )
     return resp.output_text
-
 
 # ----------------------------
 # CLI
