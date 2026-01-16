@@ -21,7 +21,25 @@ os.makedirs(IMAGES_DIR, exist_ok=True)
 
 print("RAW_ROOT:", RAW_ROOT)
 print("OUT_DIR:", OUT_DIR)
+print("\n[ANONYMIZATION] Removing sensitive patient data from DICOM metadata...\n")
 
+# --- SENSITIVE DATA TO EXCLUDE (GDPR/HIPAA compliance) ---
+# These DICOM tags contain patient-identifiable information
+SENSITIVE_TAGS = [
+    'PatientName', 'PatientID', 'PatientBirthDate', 'PatientAge', 'PatientSex',
+    'StudyDate', 'StudyTime', 'SeriesDate', 'SeriesTime', 'AcquisitionDate', 'AcquisitionTime',
+    'ContentDate', 'ContentTime', 'AccessionNumber', 'InstitutionName', 'InstitutionAddress',
+    'ReferringPhysicianName', 'PerformingPhysicianName', 'OperatorsName',
+    'StudyID', 'SeriesNumber', 'InstanceNumber', 'StudyInstanceUID', 'SeriesInstanceUID',
+    'PatientComments', 'ImageComments', 'RequestingPhysician', 'RequestedProcedureDescription'
+]
+
+def anonymize_dicom_metadata(ds):
+    """Remove all sensitive patient data from DICOM dataset."""
+    for tag in SENSITIVE_TAGS:
+        if hasattr(ds, tag):
+            delattr(ds, tag)
+    return ds
 
 # --- mapping for clean label ---
 LABEL_MAP = {
@@ -183,6 +201,9 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
 
         fpath = os.path.join(label_dir, fname)
         ds = pydicom.dcmread(fpath)
+        
+        # ANONYMIZE: remove patient-identifiable data
+        ds = anonymize_dicom_metadata(ds)
 
         case_id = make_case_id(ds, fpath)
         view = safe_get(ds, "ViewName", None) or safe_get(ds, "View", None) or safe_get(ds, "SeriesDescription",                                                                     None) or "Unknown"
@@ -192,6 +213,7 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
 
         meta = {
             "case_id": case_id,
+            "anonymized": True,  # Flag indicating data has been anonymized
 
             "diagnosis_label_raw": label_folder,
             "diagnosis_label_short": lm["short"],
@@ -200,7 +222,7 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
 
             "source_path": f"{label_folder}/{fname}",
             "modality": safe_get(ds, "Modality"),
-            "sop_class_uid": str(safe_get(ds, "SOPClassUID")),
+            # sop_class_uid removed for anonymization
             "view": view,
             "stage": stage,
             "num_frames": int(safe_get(ds, "NumberOfFrames", 1)),

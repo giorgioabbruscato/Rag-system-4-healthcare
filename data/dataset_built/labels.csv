@@ -1,0 +1,17 @@
+case_id,label_raw,label_short,label_pretty,group,file
+246eb49ab50b,Normal,normal,Normal,normal,Normal/IM-0001-0032.dcm
+5b6493c65b6b,Normal,normal,Normal,normal,Normal/IM-0001-0583.dcm
+925324c18c4c,Normal,normal,Normal,normal,Normal/IM-0001-0196.dcm
+8921ad75d022,Normal,normal,Normal,normal,Normal/IM-0001-0155.dcm
+02667f14217e,Normal,normal,Normal,normal,Normal/IM-0001-0142.dcm
+1100ec228644,Normal,normal,Normal,normal,Normal/IM-0001-0051.dcm
+c080ccbcec0b,Normal,normal,Normal,normal,Normal/IM-0001-0137.dcm
+a53a50ad3d3e,Normal,normal,Normal,normal,Normal/IM-0001-0123.dcm
+1cb8c149a65f,Normal,normal,Normal,normal,Normal/IM-0001-0239.dcm
+36ff771bde40,Normal,normal,Normal,normal,Normal/IM-0001-0148.dcm
+95e7342c3477,Normal_with_septal_hypertrophy,normal_sep_hyp,Normal with septal hypertrophy,pathology,Normal_with_septal_hypertrophy/IM-0001-0045.dcm
+608257f4581f,dilated_cardiomyopathy_with_global_dysfunction,dcm_global_dysf,Dilated cardiomyopathy with global dysfunction,pathology,dilated_cardiomyopathy_with_global_dysfunction/IM-0001-0034.dcm
+8408d71d1a9e,inferoapical_septal_akinesia,inferoapical_sep_ak,Inferoapical septal akinesia,pathology,inferoapical_septal_akinesia/IM-0001-0031.dcm
+50aafa155892,inferoapical_septal_akinesia,inferoapical_sep_ak,Inferoapical septal akinesia,pathology,inferoapical_septal_akinesia/IM-0001-0051.dcm
+42b263f58d4c,inferoapical_septal_akinesia,inferoapical_sep_ak,Inferoapical septal akinesia,pathology,inferoapical_septal_akinesia/IM-0001-0048.dcm
+a3dc11f66c98,inferoapical_septal_akinesia,inferoapical_sep_ak,Inferoapical septal akinesia,pathology,inferoapical_septal_akinesia/IM-0001-0029.dcm

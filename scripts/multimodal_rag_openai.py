@@ -1,11 +1,12 @@
 import os
+import sys
 import base64
 from typing import List, Dict, Any, Optional, Tuple
 
-from sentence_transformers import SentenceTransformer
+# Add src to path per import del vectorstore_manager
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-# Datapizza AI / Qdrant
-from datapizza.vectorstores.qdrant import QdrantVectorstore
+from src.vectorstore_manager import get_vectorstore, get_embedder
 
 # ----------------------------------
 # Config
@@ -13,13 +14,9 @@ from datapizza.vectorstores.qdrant import QdrantVectorstore
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "dataset_built"))
 
-# usa Qdrant in memoria o remoto
-vectorstore = QdrantVectorstore(location=":memory:")
-# oppure se hai un server Qdrant attivo:
-# vectorstore = QdrantVectorstore(host="localhost", port=6333)
-
-EMB_MODEL = "all-MiniLM-L6-v2"
-embedder = SentenceTransformer(EMB_MODEL)
+# Usa il vectorstore manager (auto-indexing al primo utilizzo)
+vectorstore = get_vectorstore()
+embedder = get_embedder()
 
 TOPK_CASES = 5
 TOPK_GUIDES = 4
@@ -73,15 +70,31 @@ def retrieve_similar_qdrant(
     query_text: str,
     k: int
 ) -> Dict[str, Any]:
+    """Retrieve similar documents from Qdrant collection."""
     # embed query
     q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()[0]
-    # search in Qdrant
-    hits = vectorstore.search(
-        collection_name=collection_name,
-        query_vector=q_emb,
-        vector_name="text_embeddings",
-        k=k
-    )
+    
+    try:
+        # search in Qdrant (vector_name deve corrispondere a quello in index_Qdrant.py)
+        hits = vectorstore.search(
+            collection_name=collection_name,
+            query_vector=q_emb,
+            vector_name="text_embedding",  # allineato con index_Qdrant.py
+            k=k
+        )
+    except Exception as e:
+        print(f"[WARNING] Search failed for collection '{collection_name}': {e}")
+        hits = []
+    
+    # gestisci risultati vuoti
+    if not hits:
+        return {
+            "ids": [[]],
+            "metadatas": [[]],
+            "documents": [[]],
+            "distances": [[]],
+        }
+    
     # convert to a structure similar a Chroma
     # vectorstore.search returns list of objects with .id, .score, .metadata, .text
     return {
@@ -96,6 +109,10 @@ def knn_vote_labels(
     case_dists: List[float],
     topn: int = 3
 ) -> List[Tuple[str, float]]:
+    """Vote on diagnosis labels weighted by distance."""
+    if not case_metas or not case_dists:
+        return [("unknown", 0.0)]
+    
     scores: Dict[str, float] = {}
     for meta, dist in zip(case_metas, case_dists):
         lab = meta.get("diagnosis_label_raw", "unknown")
@@ -199,11 +216,17 @@ def run_multimodal_rag(
     query_frames_folder: Optional[str] = None,
     query_frame_paths: Optional[List[str]] = None,
 ) -> str:
+    """Main RAG pipeline: retrieve cases/guidelines, build multimodal prompt, call OpenAI."""
     # 1) Retrieve similar cases
     cases_res = retrieve_similar_qdrant("cases", report_text, TOPK_CASES)
+    if not cases_res["ids"][0]:
+        print("[WARNING] No similar cases found. Check if 'cases' collection is populated.")
 
     # 2) Retrieve guidelines (optional)
     guides_res = retrieve_similar_qdrant("guidelines", report_text, TOPK_GUIDES)
+    if not guides_res["ids"][0]:
+        print("[INFO] No guidelines found. Continuing without guideline context.")
+        guides_res = None
 
     # 3) kNN vote
     knn_candidates = knn_vote_labels(

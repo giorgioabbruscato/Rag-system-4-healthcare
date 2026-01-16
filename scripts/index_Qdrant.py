@@ -17,7 +17,7 @@ print("JSONL_PATH:", JSONL_PATH)
 #instance vector store
 vectorstore = QdrantVectorstore(location=":memory:")
 vector_config = [
-    VectorConfig(name="text_embedding", dimensions=1536)
+    VectorConfig(name="text_embedding", dimensions=384)  # all-MiniLM-L6-v2 = 384 dims
 ]
 
 vectorstore.create_collection(

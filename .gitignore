@@ -205,3 +205,32 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ===================================================================
+# SENSITIVE DATA - MUST NOT BE COMMITTED TO PUBLIC REPOSITORY
+# ===================================================================
+
+# DICOM files contain patient-identifiable information (PHI/PII)
+# Only anonymized derived data in dataset_built/ should be committed
+data/raw_data/**/*.dcm
+data/raw_data/**/*.DCM
+data/raw_data/**/*.dicom
+data/raw_data/**/*.DICOM
+
+# Temporary case uploads (may contain patient data)
+data/current_case_frames/
+data/temp_uploads/
+
+# Model caches and weights
+.cache/
+models/
+*.pth
+*.pt
+*.ckpt
+
+# Qdrant storage (if using persistent mode)
+qdrant_storage/
+
+# Test outputs
+test_frames/
+temp/

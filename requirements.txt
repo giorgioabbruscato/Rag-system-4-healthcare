@@ -12,6 +12,8 @@ Pillow>=9.5
 chromadb>=0.4.24
 qdrant_client >= 0.11.10
 datapizza-ai >= 0.0.9
+datapizza-ai-parsers-docling >= 0.0.1
+datapizza-ai-vectorstores-qdrant >= 0.0.1
 # Embeddings (local, no API)
 sentence-transformers>=2.2.2
 torch>= 1.0.0
