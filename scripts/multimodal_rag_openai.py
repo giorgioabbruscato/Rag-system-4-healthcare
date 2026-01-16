@@ -1,40 +1,22 @@
-"""
-multimodal_rag_openai.py
-
-True multimodal RAG for cardiology (text + images + video sampled as frames):
-- Input: report text + optional current exam frames folder (sampled frames)
-- Retrieval: similar cases (Chroma "cases") + guidelines (Chroma "guidelines", optional)
-- Reasoning: GPT-4o (vision + text) using retrieved context + images
-- Output: suggested diagnosis + differential + evidence + missing info + sources
-
-Assumptions:
-- Chroma DB at: data/dataset_built/chroma_db
-- cases collection exists
-- guidelines collection exists (optional)
-- frames stored at: data/dataset_built/images/<case_id>/frame_*.png
-- embeddings: all-MiniLM-L6-v2 (SentenceTransformers)
-
-Requirements:
-pip install openai python-dotenv chromadb sentence-transformers pillow numpy
-
-Env:
-OPENAI_API_KEY in your environment or .env
-"""
-
 import os
 import base64
 from typing import List, Dict, Any, Optional, Tuple
 
-import chromadb
 from sentence_transformers import SentenceTransformer
-from openai import OpenAI
 
-# ----------------------------
+# Datapizza AI / Qdrant
+from datapizza.vectorstores.qdrant import QdrantVectorstore
+
+# ----------------------------------
 # Config
-# ----------------------------
+# ----------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "dataset_built"))
-CHROMA_DIR = os.path.join(DATA_DIR, "chroma_db")
+
+# usa Qdrant in memoria o remoto
+vectorstore = QdrantVectorstore(location=":memory:")
+# oppure se hai un server Qdrant attivo:
+# vectorstore = QdrantVectorstore(host="localhost", port=6333)
 
 EMB_MODEL = "all-MiniLM-L6-v2"
 embedder = SentenceTransformer(EMB_MODEL)
@@ -47,12 +29,13 @@ MAX_QUERY_FRAMES = 12
 MAX_SIMILAR_FRAMES_TOTAL = 12
 
 MODEL_VISION = "gpt-4o"
-
+# OpenAI client dal SDK ufficiale
+from openai import OpenAI
 client = OpenAI()
 
-# ----------------------------
+# ----------------------------------
 # Helpers
-# ----------------------------
+# ----------------------------------
 def image_to_data_url(path: str) -> str:
     """Encode local image as data URL for OpenAI image input."""
     with open(path, "rb") as f:
@@ -85,13 +68,28 @@ def pick_frames_for_case(case_id: str, n: int) -> List[str]:
     frames = list_frames_in_folder(case_dir)
     return uniform_sample(frames, n)
 
-def retrieve_by_text(collection, query_text: str, k: int) -> Dict[str, Any]:
-    q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()
-    return collection.query(
-        query_embeddings=q_emb,
-        n_results=k,
-        include=["documents", "metadatas", "distances"]
+def retrieve_similar_qdrant(
+    collection_name: str,
+    query_text: str,
+    k: int
+) -> Dict[str, Any]:
+    # embed query
+    q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()[0]
+    # search in Qdrant
+    hits = vectorstore.search(
+        collection_name=collection_name,
+        query_vector=q_emb,
+        vector_name="text_embeddings",
+        k=k
     )
+    # convert to a structure similar a Chroma
+    # vectorstore.search returns list of objects with .id, .score, .metadata, .text
+    return {
+        "ids": [[hit.id for hit in hits]],
+        "metadatas": [[hit.metadata for hit in hits]],
+        "documents": [[hit.text for hit in hits]],
+        "distances": [[hit.score for hit in hits]],
+    }
 
 def knn_vote_labels(
     case_metas: List[Dict[str, Any]],
@@ -105,12 +103,6 @@ def knn_vote_labels(
         scores[lab] = scores.get(lab, 0.0) + w
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return ranked[:topn]
-
-def get_collection_safe(chroma: chromadb.PersistentClient, name: str):
-    try:
-        return chroma.get_collection(name)
-    except Exception:
-        return None
 
 # ----------------------------
 # Prompting
@@ -145,14 +137,15 @@ Output format:
 5) Sources
 """
 
+
+
 def build_user_payload(
     report_text: str,
     knn_candidates: List[Tuple[str, float]],
     cases_res: Dict[str, Any],
     guides_res: Optional[Dict[str, Any]],
 ) -> str:
-    diag_lines = "\n".join([f"- {lab}: score={sc:.3f}" for lab, sc in knn_candidates])
-
+    # … stessa logica di prima …
     case_ids = cases_res["ids"][0]
     case_metas = cases_res["metadatas"][0]
     case_docs = cases_res["documents"][0]
@@ -166,7 +159,7 @@ def build_user_payload(
             f"{case_docs[i]}\n"
         )
 
-    if guides_res is None:
+    if not guides_res:
         guides_block = "(no guidelines retrieved)"
     else:
         guides_block = ""
@@ -174,16 +167,16 @@ def build_user_payload(
         g_docs = guides_res["documents"][0]
         g_metas = guides_res["metadatas"][0]
         g_dists = guides_res["distances"][0]
-
         for i in range(len(g_ids)):
             meta = g_metas[i]
             src = meta.get("source", "unknown")
-            # support both chunk_id and chunk
             chunk = meta.get("chunk_id", meta.get("chunk", "?"))
             guides_block += (
                 f"\n[GUIDELINE {src} chunk={chunk} dist={g_dists[i]:.4f}]\n"
                 f"{g_docs[i]}\n"
             )
+
+    diag_lines = "\n".join([f"- {lab}: score={sc:.3f}" for lab, sc in knn_candidates])
 
     return f"""CLINICAL REPORT:
 {report_text}
@@ -198,34 +191,28 @@ RETRIEVED GUIDELINES:
 {guides_block}
 """
 
-# ----------------------------
+# ----------------------------------
 # Main pipeline
-# ----------------------------
+# ----------------------------------
 def run_multimodal_rag(
     report_text: str,
     query_frames_folder: Optional[str] = None,
     query_frame_paths: Optional[List[str]] = None,
 ) -> str:
-    chroma = chromadb.PersistentClient(path=CHROMA_DIR)
-    cases_col = chroma.get_collection("cases")
-    guides_col = get_collection_safe(chroma, "guidelines")
-
-    # 1) Retrieve similar cases from report text
-    cases_res = retrieve_by_text(cases_col, report_text, TOPK_CASES)
+    # 1) Retrieve similar cases
+    cases_res = retrieve_similar_qdrant("cases", report_text, TOPK_CASES)
 
     # 2) Retrieve guidelines (optional)
-    guides_res = None
-    if guides_col is not None:
-        guides_res = retrieve_by_text(guides_col, report_text, TOPK_GUIDES)
+    guides_res = retrieve_similar_qdrant("guidelines", report_text, TOPK_GUIDES)
 
-    # 3) kNN vote over retrieved labels
+    # 3) kNN vote
     knn_candidates = knn_vote_labels(
         cases_res["metadatas"][0],
         cases_res["distances"][0],
         topn=3
     )
 
-    # 4) Current exam frames (query) - user-provided
+    # 4) Frames
     if query_frame_paths is None:
         query_frame_paths = list_frames_in_folder(query_frames_folder)
     query_frame_paths = uniform_sample(query_frame_paths, MAX_QUERY_FRAMES)
@@ -237,21 +224,17 @@ def run_multimodal_rag(
         similar_frames.extend(pick_frames_for_case(cid, FRAMES_PER_SIMILAR_CASE))
     similar_frames = uniform_sample(similar_frames, MAX_SIMILAR_FRAMES_TOTAL)
 
-    # 6) Build user text context
+    # 6) Build prompt context
     user_text = build_user_payload(report_text, knn_candidates, cases_res, guides_res)
 
-    # 7) Build multimodal content: text + images
+    # 7) Build multimodal content
     content: List[Dict[str, Any]] = [{"type": "input_text", "text": user_text}]
-
-    # Add current exam frames first
     for p in query_frame_paths:
         content.append({"type": "input_image", "image_url": image_to_data_url(p)})
-
-    # Add similar-case frames
     for p in similar_frames:
         content.append({"type": "input_image", "image_url": image_to_data_url(p)})
 
-    # 8) Call OpenAI
+    # 8) OpenAI call
     resp = client.responses.create(
         model=MODEL_VISION,
         input=[
@@ -262,9 +245,9 @@ def run_multimodal_rag(
     )
     return resp.output_text
 
-# ----------------------------
+# ----------------------------------
 # CLI
-# ----------------------------
+# ----------------------------------
 if __name__ == "__main__":
     print("Paste the clinical report (finish with an empty line):")
     lines = []

@@ -1,14 +1,25 @@
 import os
-import chromadb
 from sentence_transformers import SentenceTransformer
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "dataset_built"))
-CHROMA_DIR = os.path.join(DATA_DIR, "chroma_db")
+from datapizza.vectorstores.qdrant import QdrantVectorstore
 
+# -----------------------------
+# Setup
+# -----------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# use Qdrant in-memory
+vectorstore = QdrantVectorstore(location=":memory:")
+
+# if server Qdrant:
+# vectorstore = QdrantVectorstore(host="localhost", port=6333)
+
+# collection
+COLLECTION_NAME = "cases"
+
+# -----------------------------
+# Model
+# -----------------------------
 model = SentenceTransformer("all-MiniLM-L6-v2")
-client = chromadb.PersistentClient(path=CHROMA_DIR)
-col = client.get_collection("cases")
 
 print("Ready. Empty query to exit.")
 
@@ -17,16 +28,29 @@ while True:
     if not q:
         break
 
-    q_emb = model.encode([q], normalize_embeddings=True).tolist()
-    res = col.query(
-        query_embeddings=q_emb,
-        n_results=5,
-        include=["documents", "metadatas", "distances"]
+    # 1) fai embedding alla query
+    q_emb = model.encode([q], normalize_embeddings=True).tolist()[0]
+
+    # 2) cerca nel vectorstore
+    # `vector_name` deve essere il nome usato quando hai creato la collection
+    results = vectorstore.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=q_emb,
+        vector_name="text_embeddings",  # o come si chiama il tuo vettore
+        k=5
     )
 
-    for i in range(len(res["ids"][0])):
-        cid = res["ids"][0][i]
-        meta = res["metadatas"][0][i]
-        dist = res["distances"][0][i]
-        print(f"\n#{i+1} case_id={cid}  label={meta.get('diagnosis_label_raw')}  dist={dist:.4f}")
-        print(res["documents"][0][i])
+    # 3) stampa
+    if not results:
+        print("No results found.")
+        continue
+
+    print(f"\nTop {len(results)} results:")
+
+    for i, chunk in enumerate(results, start=1):
+        meta = chunk.metadata
+        text = chunk.text
+        score = chunk.score
+
+        print(f"\n#{i} id={chunk.id}  score={score:.4f}")
+        print(text)

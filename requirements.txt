@@ -10,10 +10,11 @@ Pillow>=9.5
 
 # Vector database
 chromadb>=0.4.24
-
+qdrant_client >= 0.11.10
+datapizza-ai >= 0.0.9
 # Embeddings (local, no API)
 sentence-transformers>=2.2.2
-torch>=2.0
+torch>= 1.0.0
 
 # Utilities
 tqdm>=4.65
@@ -21,3 +22,11 @@ python-dotenv>=1.0
 
 # OPENAI
 openai >= 1.0.0
+
+#Backend
+fastapi >= 0.0.1
+pydantic >= 1.0.0
+streamlit >= 1.0.0
+requests~=2.32.4
+textparser <= 0.24.0
+Docling >= 2.68.0
