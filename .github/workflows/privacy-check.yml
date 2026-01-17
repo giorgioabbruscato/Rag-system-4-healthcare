@@ -1,0 +1,84 @@
+name: Privacy & Anonymization Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'data/dataset_built/**'
+      - 'scripts/build_dataset.py'
+      - 'scripts/verify_anonymization.py'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'data/dataset_built/**'
+      - 'scripts/build_dataset.py'
+      - 'scripts/verify_anonymization.py'
+
+jobs:
+  verify-anonymization:
+    name: Verify Data Anonymization
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest
+    
+    - name: Run anonymization verification
+      run: |
+        python3 scripts/verify_anonymization.py
+    
+    - name: Run privacy-focused tests
+      run: |
+        pip install -r requirements.txt
+        pytest tests/test_anonymization.py -v -m privacy
+    
+    - name: Check for sensitive patterns in files
+      run: |
+        echo "Checking for potential sensitive data patterns..."
+        
+        # Check for common sensitive patterns
+        ! grep -ri "patient.*name" data/dataset_built/ || (echo "Found patient name pattern" && exit 1)
+        ! grep -ri "patient.*id" data/dataset_built/ || (echo "Found patient ID pattern" && exit 1)
+        ! grep -rE "[0-9]{8}" data/dataset_built/documents.jsonl | grep -i date || (echo "Found date pattern" && exit 1)
+        
+        echo "✅ No sensitive patterns detected"
+    
+    - name: Verify .gitignore protection
+      run: |
+        echo "Checking .gitignore protection..."
+        
+        # Verify DICOM files are ignored
+        grep -q "\.dcm" .gitignore || (echo ".dcm files not in .gitignore" && exit 1)
+        grep -q "raw_data" .gitignore || (echo "raw_data not in .gitignore" && exit 1)
+        grep -q "\.env" .gitignore || (echo ".env not in .gitignore" && exit 1)
+        
+        echo "✅ .gitignore properly configured"
+    
+    - name: Check for accidentally committed DICOM files
+      run: |
+        echo "Checking for DICOM files in repository..."
+        
+        if find . -name "*.dcm" -o -name "*.DCM" | grep -v ".git"; then
+          echo "❌ ERROR: DICOM files found in repository!"
+          exit 1
+        fi
+        
+        echo "✅ No DICOM files in repository"
+    
+    - name: Summary
+      if: success()
+      run: |
+        echo "================================================"
+        echo "✅ All privacy checks passed"
+        echo "✅ Dataset is properly anonymized"
+        echo "✅ Safe for public repository"
+        echo "================================================"

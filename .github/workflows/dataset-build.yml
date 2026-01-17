@@ -1,0 +1,116 @@
+name: Dataset Build & Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      rebuild:
+        description: 'Force rebuild dataset'
+        required: false
+        default: 'false'
+
+jobs:
+  build-dataset:
+    name: Build and Validate Dataset
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Check if dataset exists
+      id: check_dataset
+      run: |
+        if [ -f "data/dataset_built/documents.jsonl" ] && [ "${{ github.event.inputs.rebuild }}" != "true" ]; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Build dataset from DICOM
+      if: steps.check_dataset.outputs.exists == 'false'
+      run: |
+        python3 scripts/build_dataset.py
+    
+    - name: Verify anonymization
+      run: |
+        python3 scripts/verify_anonymization.py
+    
+    - name: Validate dataset structure
+      run: |
+        # Count documents
+        DOCS=$(wc -l < data/dataset_built/documents.jsonl)
+        echo "Total documents: $DOCS"
+        
+        # Count case cards
+        CASES=$(grep -c '"document_type": "case_card"' data/dataset_built/documents.jsonl || echo 0)
+        echo "Case cards: $CASES"
+        
+        # Count frames
+        FRAMES=$(grep -c '"document_type": "frame"' data/dataset_built/documents.jsonl || echo 0)
+        echo "Frame documents: $FRAMES"
+        
+        # Verify all have anonymized flag
+        ANON=$(grep -c '"anonymized": true' data/dataset_built/documents.jsonl || echo 0)
+        echo "Anonymized documents: $ANON"
+        
+        if [ "$ANON" -ne "$DOCS" ]; then
+          echo "❌ ERROR: Not all documents are marked as anonymized!"
+          exit 1
+        fi
+        
+        echo "✅ Dataset validation passed"
+    
+    - name: Run dataset tests
+      run: |
+        pytest tests/test_build_dataset.py -v
+    
+    - name: Generate dataset report
+      run: |
+        python3 << 'EOF'
+        import json
+        import sys
+        
+        stats = {
+            "total_docs": 0,
+            "case_cards": 0,
+            "frames": 0,
+            "diagnoses": {},
+            "modalities": set()
+        }
+        
+        with open("data/dataset_built/documents.jsonl", "r") as f:
+            for line in f:
+                doc = json.loads(line)
+                meta = doc.get("metadata", {})
+                stats["total_docs"] += 1
+                
+                doc_type = meta.get("document_type")
+                if doc_type == "case_card":
+                    stats["case_cards"] += 1
+                    diag = meta.get("diagnosis_label_pretty", "Unknown")
+                    stats["diagnoses"][diag] = stats["diagnoses"].get(diag, 0) + 1
+                elif doc_type == "frame":
+                    stats["frames"] += 1
+                
+                mod = meta.get("modality")
+                if mod:
+                    stats["modalities"].add(mod)
+        
+        print("\n=== Dataset Statistics ===")
+        print(f"Total documents: {stats['total_docs']}")
+        print(f"Case cards: {stats['case_cards']}")
+        print(f"Frame documents: {stats['frames']}")
+        print(f"\nDiagnosis distribution:")
+        for diag, count in sorted(stats["diagnoses"].items()):
+            print(f"  {diag}: {count}")
+        print(f"\nModalities: {', '.join(stats['modalities'])}")
+        EOF
