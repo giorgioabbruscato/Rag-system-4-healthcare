@@ -2,6 +2,11 @@ import os
 import uuid
 from pathlib import Path
 from fastapi import UploadFile
+import sys
+
+# Ensure project root is on path to import scripts
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+from scripts.dicom_to_frames_current import extract_frames
 
 DATA_DIR = Path("data")
 CURRENT_DICOM_DIR = DATA_DIR / "current" / "dicom"
@@ -23,27 +28,22 @@ async def save_current_dicom_and_extract_frames(file: UploadFile):
     content = await file.read()
     dicom_path.write_bytes(content)
 
-    # --- QUI colleghi il tuo pezzo dicom_to_frames_current ---
-    # Opzione A (consigliata): trasformi script in funzione importabile in src/
-    # from src.dicom_to_frames import dicom_to_frames
-    # out_dir = CURRENT_FRAMES_DIR / file_id
-    # out_dir.mkdir(parents=True, exist_ok=True)
-    # dicom_to_frames(str(dicom_path), str(out_dir))
-
-    # Opzione B (rapida): esegui lo script come subprocess (meno elegante)
-    # import subprocess
-    # out_dir = CURRENT_FRAMES_DIR / file_id
-    # out_dir.mkdir(parents=True, exist_ok=True)
-    # subprocess.check_call(["python", "script/dicom_to_frames_current/main.py", "--in", str(dicom_path), "--out", str(out_dir)])
-
+    # Estrarre frame dal DICOM appena caricato
     out_dir = CURRENT_FRAMES_DIR / file_id
     out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        frames = extract_frames(str(dicom_path), str(out_dir), n_frames=12)
+    except Exception as e:
+        # Se l'estrazione fallisce, restituisce comunque i path base
+        frames = []
+        print(f"[doc_service] Frame extraction failed: {e}")
 
     return {
         "file_id": file_id,
         "dicom_path": str(dicom_path),
         "frames_dir": str(out_dir),
-        "note": "Frames extraction: collega qui dicom_to_frames_current"
+        "frames": frames,
+        "note": "Frames extracted via scripts/dicom_to_frames_current.extract_frames"
     }
 
 def list_current_files():

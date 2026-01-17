@@ -7,8 +7,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from src.vectorstore_manager import get_vectorstore, get_embedder
 
-# Import della pipeline multimodale (se serve)
-# from scripts.multimodal_rag_openai import run_multimodal_rag
+# Import della pipeline multimodale
+try:
+    from scripts.multimodal_rag_openai import run_multimodal_rag
+except Exception as e:
+    run_multimodal_rag = None
+    print(f"[rag_service] WARNING: multimodal pipeline unavailable: {e}")
 
 
 def answer_question(
@@ -93,4 +97,37 @@ def answer_question(
         "sources": sources,
         "session_id": session_id or "session-auto",
         "evaluation": evaluation_obj,
+    }
+
+
+def analyze_current_case(
+    report_text: Optional[str],
+    frames_dir: Optional[str]
+) -> Dict[str, Any]:
+    """
+    Run multimodal RAG using provided frames directory and a report_text.
+    If report_text is None, use a generic clinical analysis instruction.
+    Requires OPENAI_API_KEY set for vision model.
+    """
+    default_report = (
+        "Analyze this echocardiography case. Provide probable diagnosis, "
+        "differential, confidence, and cite evidence from images and retrieved cases/guidelines."
+    )
+    text = report_text.strip() if report_text else default_report
+
+    if run_multimodal_rag is None:
+        return {
+            "ok": False,
+            "error": "Multimodal pipeline unavailable. Ensure OpenAI SDK installed and OPENAI_API_KEY set.",
+        }
+
+    try:
+        output_text = run_multimodal_rag(report_text=text, query_frames_folder=frames_dir)
+    except Exception as e:
+        return {"ok": False, "error": f"Multimodal RAG failed: {e}"}
+
+    return {
+        "ok": True,
+        "answer": output_text,
+        "frames_dir": frames_dir,
     }
