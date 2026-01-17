@@ -4,12 +4,12 @@ from typing import Optional, Any, Dict, List
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.services.doc_service import save_current_dicom_and_extract_frames, list_current_files, delete_current_file
-from api.services.rag_service import answer_question
+from api.services.rag_service import answer_question, analyze_current_case
 
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # adjust in prod. ok in local enviroment
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,9 +47,22 @@ async def upload_doc(
     test_splitter_chunk: str = Form("default"),
     summarize_type: str = Form("none"),
 ):
-    # nel tuo caso: "il caso nuovo è sempre un DICOM"
     result = await save_current_dicom_and_extract_frames(file)
     return {"ok": True, **result}
+
+
+@app.post("/analyze-case")
+async def analyze_case(
+    file: UploadFile = File(...),
+    report_text: Optional[str] = Form(None)
+):
+    """
+    Upload a DICOM, extract frames, and run multimodal RAG to generate a supportive answer.
+    No chat required: returns a single analysis output.
+    """
+    result = await save_current_dicom_and_extract_frames(file)
+    analysis = analyze_current_case(report_text=report_text, frames_dir=result.get("frames_dir"))
+    return {"ok": True, **result, "analysis": analysis}
 
 @app.get("/list-docs")
 def list_docs(rag_type: str):
@@ -60,9 +73,3 @@ def list_docs(rag_type: str):
 def delete_doc(payload: Dict[str, Any]):
     file_id = payload.get("file_id")
     return delete_current_file(file_id)
-
-@app.post("/flush-rag")
-def flush_rag(payload: Dict[str, Any]):
-    # minimo: svuota la cartella current/frames o azzera memoria sessioni
-    # (qui puoi implementare soft reset)
-    return {"ok": True, "message": "Reset stub (implementa pulizia current + memoria sessioni)"}
