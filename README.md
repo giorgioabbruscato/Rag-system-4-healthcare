@@ -12,7 +12,33 @@ Sistema RAG (Retrieval-Augmented Generation) multimodale per supporto decisional
 
 📖 See [ANONYMIZATION.md](ANONYMIZATION.md) for details.
 
-## Quick Start
+## 🚀 Quick Start (Docker - Consigliato)
+
+```bash
+# Avvia tutto automaticamente
+./start-docker.sh
+# oppure
+make start
+```
+
+Accedi ai servizi:
+- **Streamlit UI**: http://localhost:8501
+- **API Docs**: http://localhost:8000/docs  
+- **Qdrant Dashboard**: http://localhost:6333/dashboard
+
+```bash
+# Spegni tutto
+./stop-docker.sh
+# oppure
+make stop
+
+# Controlla stato
+make status
+```
+
+📖 Guida completa: [QUICKSTART.md](QUICKSTART.md)
+
+## Quick Start (Manuale)
 
 ```bash
 # 1. Setup ambiente

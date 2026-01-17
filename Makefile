@@ -1,8 +1,18 @@
-.PHONY: help install install-dev test test-fast test-cov test-privacy lint format clean run build-dataset verify-anon
+.PHONY: help install install-dev test test-fast test-cov test-privacy lint format clean run build-dataset verify-anon start stop status
 
 help:  ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+# Quick start/stop commands
+start:  ## 🚀 Start all services (Docker)
+	@./start-docker.sh
+
+stop:  ## 🛑 Stop all services (Docker)
+	@./stop-docker.sh
+
+status:  ## 📊 Check services status
+	@./status-docker.sh
 
 install:  ## Install production dependencies
 	pip install -r requirements.txt
@@ -77,3 +87,46 @@ pre-commit:  ## Run pre-commit checks (lint + test + privacy)
 	@$(MAKE) test-fast
 	@$(MAKE) test-privacy
 	@echo "✅ All pre-commit checks passed!"
+
+# Docker commands
+docker-build:  ## Build all Docker images
+	docker-compose build
+
+docker-build-api:  ## Build API Docker image
+	docker build -f Dockerfile.api -t rag-healthcare-api:latest .
+
+docker-build-streamlit:  ## Build Streamlit Docker image
+	docker build -f Dockerfile.streamlit -t rag-healthcare-streamlit:latest .
+
+docker-up:  ## Start all services with Docker Compose
+	docker-compose up -d
+
+docker-up-build:  ## Build and start all services
+	docker-compose up -d --build
+
+docker-down:  ## Stop all services
+	docker-compose down
+
+docker-logs:  ## Show logs from all services
+	docker-compose logs -f
+
+docker-logs-api:  ## Show API logs
+	docker-compose logs -f api
+
+docker-logs-streamlit:  ## Show Streamlit logs
+	docker-compose logs -f streamlit
+
+docker-ps:  ## Show running containers
+	docker-compose ps
+
+docker-clean:  ## Remove all containers, volumes, and images
+	docker-compose down -v --rmi all
+
+docker-dev:  ## Start services in development mode with hot reload
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+docker-shell-api:  ## Open shell in API container
+	docker-compose exec api /bin/bash
+
+docker-shell-streamlit:  ## Open shell in Streamlit container
+	docker-compose exec streamlit /bin/bash
