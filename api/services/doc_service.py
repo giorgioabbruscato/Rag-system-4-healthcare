@@ -51,10 +51,13 @@ def list_current_files():
     files = []
     for p in CURRENT_DICOM_DIR.glob("*.dcm"):
         files.append({"file_id": p.stem, "name": p.name, "path": str(p)})
-    return files
+    return {"files": files, "count": len(files)}
 
-def delete_current_file(file_id: str):
+def delete_current_file(file_id: str = None):
     _ensure_dirs()
+    if not file_id:
+        return {"ok": False, "error": "file_id required"}
+    
     dicom_path = CURRENT_DICOM_DIR / f"{file_id}.dcm"
     frames_dir = CURRENT_FRAMES_DIR / file_id
 
