@@ -42,8 +42,6 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
-          sudo docker container prune --force
           echo "Disk space after cleanup:"
           df -h
       
@@ -79,6 +77,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -87,12 +86,21 @@ jobs:
           # Enable layer caching and optimize builds
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-      
-      - name: Clean up build cache
-        if: always()
+
+      - name: Export image tarball (PR)
+        if: github.event_name == 'pull_request'
         run: |
-          docker builder prune --force --filter type=exec.cachemount
-          docker builder prune --force --filter type=source.local
+          TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)
+          echo "Saving image ${TAG}"
+          docker save "$TAG" -o "/tmp/${{ matrix.image }}.tar"
+
+      - name: Upload image artifact (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ matrix.image }}
+          path: /tmp/${{ matrix.image }}.tar
+          retention-days: 1
       
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'
@@ -120,11 +128,23 @@ jobs:
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
-          sudo docker container prune --force
           echo "Disk space after cleanup:"
           df -h
       
+      - name: Download built images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: /tmp/images
+          merge-multiple: true
+
+      - name: Load images
+        run: |
+          for tar in /tmp/images/*.tar; do
+            echo "Loading $tar"
+            docker load -i "$tar"
+          done
+
       - name: Create .env file
         run: |
           echo "OPENAI_API_KEY=test-key" > .env
