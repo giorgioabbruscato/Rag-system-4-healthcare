@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.services.doc_service import save_current_dicom_and_extract_frames, list_current_files, delete_current_file
 from api.services.rag_service import answer_question, analyze_current_case
 
-from src.vectorstore_manager import reset_collections
+from scripts.index_Qdrant import reset_collections
 
 
 app = FastAPI()

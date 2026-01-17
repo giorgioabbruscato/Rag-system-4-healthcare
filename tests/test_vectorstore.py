@@ -1,5 +1,5 @@
 """
-Unit tests for vectorstore_manager module.
+Unit tests for index_Qdrant module.
 Tests singleton pattern, auto-indexing, and retrieval.
 """
 import pytest
@@ -8,10 +8,10 @@ import sys
 import tempfile
 import json
 
-# Add src to path
+# Add scripts to path
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
 
-from src.vectorstore_manager import (
+from scripts.index_Qdrant import (
     get_vectorstore,
     get_embedder,
     _ensure_collections_populated,
@@ -19,7 +19,7 @@ from src.vectorstore_manager import (
 )
 
 
-class TestVectorstoreManager:
+class TestIndexQdrant:
     """Test vectorstore singleton and initialization."""
     
     def test_get_vectorstore_singleton(self):

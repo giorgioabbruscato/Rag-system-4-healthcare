@@ -48,7 +48,7 @@ fi
 
 # 5. Test vectorstore (auto-indexing)
 echo -e "\n${GREEN}[5/5] Initializing vectorstore (auto-indexing)...${NC}"
-python3 -c "from src.vectorstore_manager import get_vectorstore; get_vectorstore(); print('✓ Vectorstore ready')"
+python3 -c "from scripts.index_Qdrant import get_vectorstore; get_vectorstore(); print('✓ Vectorstore ready')"
 
 # 5. Start FastAPI backend
 echo -e "\n${BLUE}=== Starting FastAPI Backend ===${NC}"

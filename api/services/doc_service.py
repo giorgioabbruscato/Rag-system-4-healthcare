@@ -16,6 +16,23 @@ def _ensure_dirs():
     CURRENT_DICOM_DIR.mkdir(parents=True, exist_ok=True)
     CURRENT_FRAMES_DIR.mkdir(parents=True, exist_ok=True)
 
+# Nuova funzione: importa tutti i DICOM da raw_data a current/dicom
+import shutil
+def import_all_rawdata_dicoms():
+    """
+    Copia tutti i file .dcm da data/raw_data (ricorsivamente) a data/current/dicom/
+    Salta i file già presenti con lo stesso nome.
+    """
+    rawdata_root = Path("data/raw_data")
+    _ensure_dirs()
+    count = 0
+    for p in rawdata_root.rglob("*.dcm"):
+        dest = CURRENT_DICOM_DIR / p.name
+        if not dest.exists():
+            shutil.copy2(p, dest)
+            count += 1
+    return {"imported": count, "from": str(rawdata_root), "to": str(CURRENT_DICOM_DIR)}
+
 async def save_current_dicom_and_extract_frames(file: UploadFile):
     """
     1) salva il DICOM in data/current/dicom/<id>.dcm

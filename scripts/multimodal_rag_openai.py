@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional, Tuple
 # Add src to path per import del vectorstore_manager
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from src.vectorstore_manager import get_vectorstore, get_embedder
+from scripts.index_Qdrant import get_vectorstore, get_embedder
 
 # ----------------------------------
 # Config
