@@ -3,18 +3,20 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    g++ \
-    curl \
+# Install build dependencies and bring base up to date (glibc patches)
+RUN apt-get update \
+    && apt-get dist-upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        gcc \
+        g++ \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
 COPY requirements.txt .
 
-# Upgrade pip and install dependencies
-RUN pip install --upgrade pip && \
+# Upgrade pip/setuptools (pulls patched jaraco.context) and install dependencies
+RUN pip install --upgrade pip setuptools && \
     pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt streamlit
 
 # Final stage
@@ -22,11 +24,19 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Pull security updates (e.g., glibc) in the final image
+RUN apt-get update \
+    && apt-get dist-upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
 
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
+
+# Ensure base tools (pip/setuptools) are patched in runtime image
+RUN pip install --no-cache-dir --upgrade pip setuptools
 
 # Copy application code
 COPY app/ ./app/
