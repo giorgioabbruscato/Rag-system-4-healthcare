@@ -39,11 +39,19 @@ fi
 
 # 4. Check environment variables
 echo -e "\n${GREEN}[4/5] Checking environment variables...${NC}"
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo -e "${RED}WARNING: OPENAI_API_KEY not set${NC}"
-    echo "Set it with: export OPENAI_API_KEY='your-key'"
+if [ ! -f .env ]; then
+    echo -e "${RED}WARNING: .env file not found${NC}"
+    echo "Copy .env.example to .env and set your OPENAI_API_KEY:"
+    echo "  cp .env.example .env"
+    echo "  Then edit .env and set your OpenAI API key"
 else
-    echo "✓ OPENAI_API_KEY is set"
+    echo "✓ .env file found"
+    # Check if OPENAI_API_KEY is set in .env
+    if grep -q "^OPENAI_API_KEY=" .env 2>/dev/null; then
+        echo "✓ OPENAI_API_KEY configured in .env"
+    else
+        echo -e "${RED}WARNING: OPENAI_API_KEY not found in .env${NC}"
+    fi
 fi
 
 # 5. Test vectorstore (auto-indexing)

@@ -52,7 +52,7 @@ def answer_question(
                 sources.append({
                     "type": "case",
                     "id": hit.id,
-                    "score": hit.score,
+                    "score": 0.0,  # score not available in Chunk objects from datapizza
                     "snippet": hit.text[:200] + "...",
                     "metadata": hit.metadata
                 })
@@ -72,7 +72,7 @@ def answer_question(
                 sources.append({
                     "type": "guideline",
                     "id": hit.id,
-                    "score": hit.score,
+                    "score": 0.0,  # score not available in Chunk objects from datapizza
                     "snippet": hit.text[:200] + "...",
                     "metadata": hit.metadata
                 })

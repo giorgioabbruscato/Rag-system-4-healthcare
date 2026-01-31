@@ -2,6 +2,10 @@ import os
 import sys
 import base64
 from typing import List, Dict, Any, Optional, Tuple
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add src to path per import del vectorstore_manager
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -96,12 +100,13 @@ def retrieve_similar_qdrant(
         }
     
     # convert to a structure similar a Chroma
-    # vectorstore.search returns list of objects with .id, .score, .metadata, .text
+    # vectorstore.search returns list of Chunk objects with .id, .metadata, .text
+    # Note: score is not available in Chunk objects from datapizza, use placeholder
     return {
         "ids": [[hit.id for hit in hits]],
         "metadatas": [[hit.metadata for hit in hits]],
         "documents": [[hit.text for hit in hits]],
-        "distances": [[hit.score for hit in hits]],
+        "distances": [[0.0 for hit in hits]],  # score not available in Chunk objects
     }
 
 def knn_vote_labels(
