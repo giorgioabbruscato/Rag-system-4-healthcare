@@ -206,7 +206,7 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
         ds = anonymize_dicom_metadata(ds)
 
         case_id = make_case_id(ds, fpath)
-        view = safe_get(ds, "ViewName", None) or safe_get(ds, "View", None) or safe_get(ds, "SeriesDescription",                                                                     None) or "Unknown"
+        view = safe_get(ds, "ViewName", None) or safe_get(ds, "View", None) or safe_get(ds, "SeriesDescription",None) or "Unknown"
         stage = safe_get(ds, "StageName", None) or safe_get(ds, "ProtocolName", None) or "Unknown"
 
 
@@ -248,7 +248,7 @@ for label_folder in sorted(os.listdir(RAW_ROOT)):
         with open(JSONL_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(case_doc, ensure_ascii=False) + "\n")
 
-        # 2) frames (optional)
+        # 2) frames
         frames = export_representative_frames(ds, case_id, n=10)
         for fr in frames:
             fr_doc = {
