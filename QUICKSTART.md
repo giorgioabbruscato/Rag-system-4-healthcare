@@ -64,7 +64,14 @@ Questo cancella e ricrea `documents.jsonl` e le immagini.
 
 ## API Endpoints
 
-### POST /chat
+### POST /chat ⚠️ [DISABILITATO - Disponibile in sviluppi futuri]
+Endpoint temporaneamente disabilitato. Attualmente il sistema è ottimizzato per l'analisi di casi specifici tramite `/analyze-case`. L'endpoint chat generico sarà riabilitato in future release per query esplorative.
+
+**Endpoint attivo**: Usa `/analyze-case` per analisi multimodale di DICOM.
+
+<details>
+<summary>Specifica originale (per sviluppi futuri)</summary>
+
 Query RAG con retrieval da cases/guidelines.
 
 ```bash
@@ -94,6 +101,8 @@ curl -X POST http://localhost:8000/chat \
   "evaluation": null
 }
 ```
+
+</details>
 
 ### POST /upload-doc
 Upload file DICOM ed estrazione frame.
@@ -133,10 +142,12 @@ curl -X POST http://localhost:8000/flush-rag \
 ## Test rapido
 
 ```bash
-# Test /chat
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"question":"test","model":"gpt-4o","rag_type":"guidelines"}'
+# Test /list-docs (endpoint attivo)
+curl "http://localhost:8000/list-docs?rag_type=cases"
+
+# Test /analyze-case (endpoint principale)
+curl -X POST http://localhost:8000/analyze-case \
+  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"
 ```
 
 ## Docs interattive

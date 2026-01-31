@@ -1,5 +1,7 @@
 # Esempi Pratici - RAG Healthcare
 
+> ⚠️ **Nota**: Gli esempi con `/chat` sono attualmente disabilitati. Il sistema è ottimizzato per analisi multimodale tramite `/analyze-case`. L'endpoint `/chat` sarà riabilitato in sviluppi futuri per query esplorative generiche.
+
 ## 1. Avvio Sistema
 
 ```bash
@@ -20,7 +22,10 @@ export OPENAI_API_KEY="sk-..."
 # INFO: Uvicorn running on http://0.0.0.0:8000
 ```
 
-## 2. Query RAG - Casi Simili
+## 2. Query RAG - Casi Simili [DISABILITATO - Sviluppo futuro]
+
+<details>
+<summary>⚠️ Esempio per sviluppi futuri (endpoint attualmente disabilitato)</summary>
 
 ```bash
 # Cerca casi simili a cardiomiopatia dilatata
@@ -55,7 +60,12 @@ curl -X POST http://localhost:8000/chat \
 # }
 ```
 
-## 3. Query RAG - Guidelines
+</details>
+
+## 3. Query RAG - Guidelines [DISABILITATO - Sviluppo futuro]
+
+<details>
+<summary>⚠️ Esempio per sviluppi futuri (endpoint attualmente disabilitato)</summary>
 
 ```bash
 # Cerca nelle linee guida
@@ -72,7 +82,12 @@ curl -X POST http://localhost:8000/chat \
 # - dilated_cardiomyopathy_background.txt (per contrasto)
 ```
 
-## 4. Query RAG - Hybrid (Cases + Guidelines)
+</details>
+
+## 4. Query RAG - Hybrid (Cases + Guidelines) [DISABILITATO - Sviluppo futuro]
+
+<details>
+<summary>⚠️ Esempio per sviluppi futuri (endpoint attualmente disabilitato)</summary>
 
 ```bash
 curl -X POST http://localhost:8000/chat \
@@ -87,6 +102,8 @@ curl -X POST http://localhost:8000/chat \
 # - Casi normali e patologici dal vectorstore cases
 # - Background teorico dal vectorstore guidelines
 ```
+
+</details>
 
 ## 5. Upload DICOM e Estrazione Frame
 

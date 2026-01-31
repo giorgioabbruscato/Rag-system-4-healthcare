@@ -37,43 +37,46 @@ with st.expander("Upload DICOM"):
         else:
             st.error(r.text)
 
-for m in st.session_state.messages:
-    with st.chat_message(m["role"]):
-        st.markdown(m["content"])
+# CHAT DISABILITATA - Usa solo /analyze-case con upload DICOM
+# for m in st.session_state.messages:
+#     with st.chat_message(m["role"]):
+#         st.markdown(m["content"])
 
-q = st.chat_input("Domanda...")
-if q:
-    st.session_state.messages.append({"role": "user", "content": q})
-    with st.chat_message("user"):
-        st.markdown(q)
+# q = st.chat_input("Domanda...")
+# if q:
+#     st.session_state.messages.append({"role": "user", "content": q})
+#     with st.chat_message("user"):
+#         st.markdown(q)
 
-    payload = {
-        "question": q,
-        "model": model,
-        "rag_type": rag_type,
-        "evaluate": st.session_state.get("enable_evaluation", False),
-        "session_id": st.session_state.session_id,
-    }
-    r = requests.post(f"{BASE_URL}/chat", json=payload, timeout=180)
-    if r.status_code == 200:
-        js = r.json()
-        st.session_state.session_id = js.get("session_id", st.session_state.session_id)
+#     payload = {
+#         "question": q,
+#         "model": model,
+#         "rag_type": rag_type,
+#         "evaluate": st.session_state.get("enable_evaluation", False),
+#         "session_id": st.session_state.session_id,
+#     }
+#     r = requests.post(f"{BASE_URL}/chat", json=payload, timeout=180)
+#     if r.status_code == 200:
+#         js = r.json()
+#         st.session_state.session_id = js.get("session_id", st.session_state.session_id)
 
-        ans = js.get("answer", "")
-        st.session_state.messages.append({"role": "assistant", "content": ans})
-        with st.chat_message("assistant"):
-            st.markdown(ans)
+#         ans = js.get("answer", "")
+#         st.session_state.messages.append({"role": "assistant", "content": ans})
+#         with st.chat_message("assistant"):
+#             st.markdown(ans)
 
-            src = js.get("sources") or []
-            if src:
-                with st.expander("Sources"):
-                    st.json(src)
+#             src = js.get("sources") or []
+#             if src:
+#                 with st.expander("Sources"):
+#                     st.json(src)
 
-            ev = js.get("evaluation")
-            if ev:
-                st.info(ev.get("message") if isinstance(ev, dict) else ev)
-    else:
-        st.error(r.text)
+#             ev = js.get("evaluation")
+#             if ev:
+#                 st.info(ev.get("message") if isinstance(ev, dict) else ev)
+#     else:
+#         st.error(r.text)
+
+st.info("💡 Upload un file DICOM sopra per avviare l'analisi multimodale.")
 
 col1, col2 = st.columns(2)
 with col1:

@@ -2,6 +2,8 @@
 
 Sistema RAG (Retrieval-Augmented Generation) multimodale per supporto decisionale clinico in cardiologia. Combina analisi di immagini ecografiche DICOM, retrieval semantico di casi simili e linee guida per generare risposte diagnostiche assistite da AI.
 
+> **📌 Nota API**: Il sistema è attualmente ottimizzato per l'analisi multimodale di casi specifici tramite `/analyze-case`. L'endpoint `/chat` per query generiche è temporaneamente disabilitato e sarà disponibile in future release.
+
 ## ⚠️ Privacy & Anonymization
 
 **All patient data has been fully anonymized** in compliance with GDPR and HIPAA regulations.
@@ -79,10 +81,10 @@ Il backend sarà disponibile su **http://localhost:8000** (docs: http://localhos
 # Test manuale vectorstore + indexing
 python3 src/vectorstore_manager.py
 
-# Test API endpoint
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"question":"What is dilated cardiomyopathy?","model":"gpt-4o","rag_type":"cases"}'
+# Test API endpoint (Nota: /chat attualmente disabilitato, usa /analyze-case)
+curl -X POST http://localhost:8000/analyze-case \
+  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm" \
+  -F "report_text=Patient case for analysis"
 ```
 
 ## Dettagli Tecnici
