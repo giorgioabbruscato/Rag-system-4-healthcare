@@ -13,6 +13,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JSONL_PATH = os.path.join(BASE_DIR, "data", "dataset_built", "documents.jsonl")
 
 
+@pytest.mark.privacy
 class TestAnonymizationVerification:
     """Test that dataset is properly anonymized."""
     
@@ -135,6 +136,7 @@ class TestAnonymizationVerification:
                 "Technical parameters should be preserved"
 
 
+@pytest.mark.privacy
 class TestFileSystemSecurity:
     """Test that sensitive files are properly protected."""
     
