@@ -60,10 +60,10 @@ Il backend sarà disponibile su **http://localhost:8000** (docs: http://localhos
 ## Architettura
 
 ### Dataset Base (Auto-generato)
-- **16 casi cardiologici** (file DICOM) → 176 documenti indicizzati
-  - Normal (10), Normal with septal hypertrophy (1)
-  - Dilated cardiomyopathy (1), Inferoapical akinesia (4)
-- **Frame extraction**: 10 frame/caso + metadata (view, fps, motion features)
+- **26 casi cardiologici** (file DICOM) → 286 documenti indicizzati
+  - Normal (10), Normal variations (6), Pathological cases (10)
+  - 14 categorie diagnostiche diverse
+- **Frame extraction**: ~10 frame/caso + metadata (view, fps, motion features)
 - **Auto-indexing**: vectorstore Qdrant popolato automaticamente all'avvio
 
 ### Pipeline
@@ -90,7 +90,7 @@ curl -X POST http://localhost:8000/analyze-case \
 ## Dettagli Tecnici
 
 - **Embeddings**: SentenceTransformer all-MiniLM-L6-v2 (384 dim, locale, no API)
-- **Vectorstore**: Qdrant in-memory (16 cases + 9 guideline chunks)
+- **Vectorstore**: Qdrant in-memory (26 cases + 13 guidelines)
 - **LLM**: OpenAI GPT-4o con vision (multimodale)
 - **DICOM**: pydicom + PIL per frame extraction + metadata
 - **Backend**: FastAPI + Pydantic + CORS
@@ -104,9 +104,9 @@ curl -X POST http://localhost:8000/analyze-case \
 │   ├── build_dataset.py           # DICOM → documents.jsonl
 │   └── multimodal_rag_openai.py   # Pipeline RAG multimodale
 ├── data/
-│   ├── raw_data/                  # DICOM originali (16 file)
+│   ├── raw_data/                  # DICOM originali (26 file, 14 categorie)
 │   ├── dataset_built/             # Auto-generato (documents.jsonl + images/)
-│   └── guidelines_txt/            # Linee guida (3 file .txt)
+│   └── guidelines_txt/            # Linee guida (13 file .txt)
 ├── start.sh                       # Avvio completo
 └── rebuild_dataset.sh             # Rigenera dataset
 ```

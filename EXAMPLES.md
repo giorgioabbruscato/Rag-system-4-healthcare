@@ -16,8 +16,8 @@ export OPENAI_API_KEY="sk-..."
 #       ✓ Dataset already exists (altrimenti)
 # [4/5] Checking environment variables... ✓
 # [5/5] Initializing vectorstore...
-#       [VectorstoreManager] Indexed 16 cases. ✓
-#       [VectorstoreManager] Indexed 9 guideline chunks. ✓
+#       [VectorstoreManager] Indexed 26 cases. ✓
+#       [VectorstoreManager] Indexed 13 guideline files. ✓
 # === Starting FastAPI Backend ===
 # INFO: Uvicorn running on http://0.0.0.0:8000
 ```
@@ -164,8 +164,8 @@ python3 src/vectorstore_manager.py
 # === Vectorstore Manager Test ===
 # [VectorstoreManager] Initializing Qdrant in-memory...
 # [VectorstoreManager] Auto-indexing collections...
-# [VectorstoreManager] ✓ Indexed 16 cases.
-# [VectorstoreManager] ✓ Indexed 9 guideline chunks from 3 files.
+# [VectorstoreManager] ✓ Indexed 26 cases.
+# [VectorstoreManager] ✓ Indexed 13 guideline files.
 # 
 # Test search: 'dilated cardiomyopathy with reduced ejection fraction'
 # Found 3 results:
@@ -193,9 +193,9 @@ cp /path/to/new_study.dcm data/raw_data/Normal/
 # Removing old dataset...
 # Building dataset from DICOM files...
 # ✓ Dataset built successfully!
-#   Total documents: 187  (era 176, +11 per il nuovo caso)
-#   Case cards: 17
-#   Frames: 170
+#   Total documents: 297  (se aggiungi 1 caso)
+#   Case cards: 27
+#   Frames: 270
 
 # Riavvia backend per re-indexing
 ./start.sh
@@ -247,8 +247,8 @@ python3 scripts/multimodal_rag_openai.py
 jq -r '.metadata.document_type' data/dataset_built/documents.jsonl | sort | uniq -c
 
 # Output:
-#  16 case_card
-# 160 frame
+#  26 case_card
+# 260 frame
 
 # Conta casi per diagnosis
 jq -r '.metadata.diagnosis_label_pretty' data/dataset_built/documents.jsonl | \
@@ -257,7 +257,10 @@ jq -r '.metadata.diagnosis_label_pretty' data/dataset_built/documents.jsonl | \
 # Output:
 # 100 Normal
 #  10 Normal with septal hypertrophy
+#  10 Normal function mitral valve prolapse
 #  10 Dilated cardiomyopathy with global dysfunction
+#  40 Inferoapical septal akinesia
+# ... (14 categorie totali)
 #  40 Inferoapical septal akinesia
 ```
 

@@ -4,11 +4,11 @@
 
 ### 1. Auto-indexing Dataset
 - **Script**: `scripts/build_dataset.py`
-- **Input**: 16 file DICOM in `data/raw_data/` (4 categorie diagnostiche)
+- **Input**: 26 file DICOM in `data/raw_data/` (14 categorie diagnostiche)
 - **Output**: 
-  - `data/dataset_built/documents.jsonl` (176 documenti)
-  - `data/dataset_built/labels.csv` (mapping case→diagnosis)
-  - `data/dataset_built/images/` (160 frame PNG estratti, 10/caso)
+  - `data/dataset_built/documents.jsonl` (286 documenti)
+  - `data/dataset_built/labels.csv` (27 casi mappati → diagnosis)
+  - `data/dataset_built/images/` (260 frame PNG estratti, ~10/caso)
 - **Esecuzione**: automatica al primo avvio via `start.sh`, oppure manuale con `./rebuild_dataset.sh`
 
 ### 2. Vectorstore Manager (Singleton)
@@ -18,8 +18,8 @@
   - Auto-indexing al primo utilizzo
   - Embedding locale: SentenceTransformer all-MiniLM-L6-v2 (384 dim)
   - Collection:
-    - `cases`: 16 case cards (metadata + features estratte)
-    - `guidelines`: 9 chunk da 3 file guideline
+    - `cases`: 26 case cards (metadata + features estratte)
+    - `guidelines`: chunk da 13 file guideline
   - UUID deterministici per ID documenti
   - Gestione errori e logging
 
@@ -59,16 +59,36 @@
 
 ## 📊 Dati Indicizzati
 
-### Cases (16 documenti)
+### Cases (26 documenti)
 - **Normal**: 10 casi
 - **Normal with septal hypertrophy**: 1 caso
+- **Normal function mitral valve prolapse**: 1 caso
+- **Normal function septal hypertrophy athlete heart**: 1 caso
+- **Normal function septal hypertrophy in aortic stenosis**: 1 caso
+- **Normal function severe septal hypertrophy**: 1 caso
+- **Normal tendinous cord function in apical region**: 1 caso
 - **Dilated cardiomyopathy with global dysfunction**: 1 caso
+- **Global left ventricular dysfunction**: 1 caso
+- **Global left ventricular dysfunction and apical akinesia**: 1 caso
 - **Inferoapical septal akinesia**: 4 casi
+- **Left ventricular apical inferior septal aneurysm**: 1 caso
+- **Left ventricular dilatation with apical dyskinesia**: 1 caso
+- **Left ventricular dysfunction with apical akinesia and apical thrombosis**: 1 caso
 
-### Guidelines (9 chunk)
+### Guidelines (13 file)
 - `dilated_cardiomyopathy_background.txt`
+- `global_left_ventricular_dysfunction.txt`
+- `global_left_ventricular_dysfunction_and_apical_akinesia.txt`
 - `inferoapical_akinesia_background.txt`
+- `Left_ventricular_apical_inferior_septal_aneurysm.txt`
+- `Left_ventricular_dilatation_with_apical_dyskinesia.txt`
+- `left_ventricular_dysfunction_with_apical_akinesia_and_apical_thrombosis.txt`
 - `normal_echo_background.txt`
+- `normal_function_mitral_valve_prolapse.txt`
+- `normal_function_septal_hypertrophy_athlete_heart.txt`
+- `normal_function_septal_hypertrophy_in_aortic_stenosis.txt`
+- `normal_function_severe_septal_hypertrophy.txt`
+- `normal_tendinous_cord_function_in_apical_region.txt`
 
 ### Metadata Estratte da DICOM
 - View, Stage, FPS, Durata effettiva, Heart rate
@@ -148,18 +168,38 @@ Rag-system-4-healthcare/
 │   │   ├── Normal/                     # 10 file .dcm
 │   │   ├── Normal_with_septal_hypertrophy/  # 1 file
 │   │   ├── dilated_cardiomyopathy_with_global_dysfunction/  # 1 file
-│   │   └── inferoapical_septal_akinesia/    # 4 file
+│   │   ├── global_left_ventricular_dysfunction/  # 1 file
+│   │   ├── global_left_ventricular_dysfunction_and_apical_akinesia/  # 1 file
+│   │   ├── inferoapical_septal_akinesia/    # 4 file
+│   │   ├── Left_ventricular_apical_inferior_septal_aneurysm/  # 1 file
+│   │   ├── Left_ventricular_dilatation_with_apical_dyskinesia/  # 1 file
+│   │   ├── left_ventricular_dysfunction_with_apical_akinesia_and_apical_thrombosis/  # 1 file
+│   │   ├── normal_function_mitral_valve_prolapse/  # 1 file
+│   │   ├── normal_function_septal_hypertrophy_athlete_heart/  # 1 file
+│   │   ├── normal_function_septal_hypertrophy_in_aortic_stenosis/  # 1 file
+│   │   ├── normal_function_severe_septal_hypertrophy/  # 1 file
+│   │   └── normal_tendinous_cord_function_in_apical_region/  # 1 file
 │   ├── dataset_built/                  # AUTO-GENERATO
-│   │   ├── documents.jsonl             # 176 documenti (16 cases + 160 frames)
-│   │   ├── labels.csv                  # Case ID → Label mapping
-│   │   └── images/                     # Frame estratti (10 per caso)
+│   │   ├── documents.jsonl             # 286 documenti (26 cases + 260 frames)
+│   │   ├── labels.csv                  # Case ID → Label mapping (27 righe)
+│   │   └── images/                     # Frame estratti (~10 per caso)
 │   │       ├── <case_id_1>/
 │   │       │   ├── frame_1.png ... frame_10.png
 │   │       └── ...
 │   └── guidelines_txt/                 # Linee guida (INPUT)
 │       ├── dilated_cardiomyopathy_background.txt
+│       ├── global_left_ventricular_dysfunction.txt
+│       ├── global_left_ventricular_dysfunction_and_apical_akinesia.txt
 │       ├── inferoapical_akinesia_background.txt
-│       └── normal_echo_background.txt
+│       ├── Left_ventricular_apical_inferior_septal_aneurysm.txt
+│       ├── Left_ventricular_dilatation_with_apical_dyskinesia.txt
+│       ├── left_ventricular_dysfunction_with_apical_akinesia_and_apical_thrombosis.txt
+│       ├── normal_echo_background.txt
+│       ├── normal_function_mitral_valve_prolapse.txt
+│       ├── normal_function_septal_hypertrophy_athlete_heart.txt
+│       ├── normal_function_septal_hypertrophy_in_aortic_stenosis.txt
+│       ├── normal_function_severe_septal_hypertrophy.txt
+│       └── normal_tendinous_cord_function_in_apical_region.txt
 ├── scripts/
 │   ├── build_dataset.py                # DICOM → documents.jsonl (pipeline completa)
 │   ├── dicom_to_frames_current.py      # Estrazione frame singolo caso
@@ -187,11 +227,11 @@ Rag-system-4-healthcare/
          ↓
     build_dataset.py
          ↓
-    documents.jsonl + images/
+    documents.jsonl (286 docs) + images/ (260 frames)
          ↓
     vectorstore_manager.py (auto-indexing)
          ↓
-    Qdrant collections (cases + guidelines)
+    Qdrant collections (26 cases + 13 guidelines)
          ↓
     rag_service.py (retrieval)
          ↓

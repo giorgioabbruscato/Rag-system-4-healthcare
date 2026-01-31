@@ -33,15 +33,14 @@ python3 scripts/build_dataset.py
 ```
 
 Questo processa i file DICOM in `data/raw_data/` e genera:
-- **documents.jsonl**: 16 case cards + 160 frame metadata (176 documenti totali)
+- **documents.jsonl**: 26 case cards + 260 frame metadata (286 documenti totali)
 - **labels.csv**: mapping case_id → diagnosis label
-- **images/**: frame estratti da ogni caso (10 frame per DICOM)
+- **images/**: frame estratti da ogni caso (~10 frame per DICOM)
 
-**Cartelle raw_data**:
+**Cartelle raw_data** (14 categorie diagnostiche):
 - Normal (10 casi)
-- Normal_with_septal_hypertrophy (1 caso)
-- dilated_cardiomyopathy_with_global_dysfunction (1 caso)
-- inferoapical_septal_akinesia (4 casi)
+- Normal variations: septal hypertrophy, mitral valve prolapse, athlete heart, etc. (6 casi)
+- Pathological: dilated cardiomyopathy, global LV dysfunction, inferoapical akinesia, etc. (10 casi)
 
 ### Rigenerare il dataset
 
@@ -57,10 +56,10 @@ Questo cancella e ricrea `documents.jsonl` e le immagini.
 
 - **Backend API**: FastAPI su porta 8000
 - **Vectorstore**: Qdrant in-memory con auto-indexing
-- **Dataset base**: 16 casi cardiologici (DICOM) processati automaticamente
+- **Dataset base**: 26 casi cardiologici (DICOM) processati automaticamente
 - **Collection indicizzate**:
-  - `cases`: 16 case_cards da `data/dataset_built/documents.jsonl` (generato da raw DICOM)
-  - `guidelines`: 9 chunk da 3 file guideline in `data/guidelines_txt/*.txt`
+  - `cases`: 26 case_cards da `data/dataset_built/documents.jsonl` (generato da raw DICOM)
+  - `guidelines`: chunk da 13 file guideline in `data/guidelines_txt/*.txt`
 
 ## API Endpoints
 
