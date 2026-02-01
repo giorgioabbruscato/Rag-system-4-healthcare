@@ -32,7 +32,16 @@ MAX_SIMILAR_FRAMES_TOTAL = 12
 MODEL_VISION = "gpt-4o"
 # OpenAI client dal SDK ufficiale
 from openai import OpenAI
-client = OpenAI()
+
+# Lazy-load client to avoid import-time errors when API key is not set
+_client = None
+
+def get_openai_client() -> OpenAI:
+    """Get or create the OpenAI client instance."""
+    global _client
+    if _client is None:
+        _client = OpenAI()
+    return _client
 
 # ----------------------------------
 # Helpers
@@ -375,6 +384,7 @@ def run_multimodal_rag(
         content.append({"type": "input_image", "image_url": image_to_data_url(p)})
 
     # 8) OpenAI call
+    client = get_openai_client()
     resp = client.responses.create(
         model=MODEL_VISION,
         input=[
