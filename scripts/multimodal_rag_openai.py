@@ -163,10 +163,12 @@ Rules:
   * If the clinical report is generic/minimal (e.g., "Analyze this case"), assign LOW confidence even if KNN scores are high.
   * If visual evidence alone suggests a diagnosis but lacks clinical context, use MEDIUM confidence at most.
   * HIGH confidence requires BOTH strong clinical context AND supporting visual/retrieved evidence.
-  * If KNN candidates show low scores (<3.0) or "insufficient_evidence", explicitly state LOW confidence.
+  * If KNN candidates show low scores (<3.0), "insufficient_evidence", or marginal scores (<5.0 with generic report), explicitly state LOW confidence.
+  * **When in doubt with generic reports: prefer "Insufficient evidence for diagnosis" over speculating.**
 - **For "normal" diagnosis**:
   * If retrieved cases or clinical report suggest normal findings, consider "Normal echocardiogram" as a valid diagnosis.
   * Do not over-diagnose pathology based on visual similarity alone.
+  * **Absence of clear abnormalities in a generic report context should suggest possible normal findings.**
 - Separate evidence from text vs evidence from images.
 - For each key claim, cite either a CASE (case_id) or a GUIDELINE (source+chunk).
 - Always include a Sources section:
@@ -242,11 +244,14 @@ def build_user_payload(
     # Add context quality warning
     context_warning = ""
     if is_generic_report(report_text):
-        context_warning = "\n⚠️ NOTE: Clinical report is generic/minimal. Use LOW confidence unless visual evidence is overwhelming.\n"
+        context_warning = "\n⚠️ CRITICAL: Clinical report is generic/minimal with NO specific clinical findings.\n"
+        context_warning += "   → Use LOW confidence. Consider 'Insufficient evidence' or 'possibly Normal' if no clear abnormalities.\n"
     
     max_knn_score = knn_candidates[0][1] if knn_candidates else 0.0
-    if max_knn_score < 3.0:
-        context_warning += "\n⚠️ NOTE: KNN scores are low, indicating weak visual similarity. Consider insufficient evidence.\n"
+    if max_knn_score < 5.0 and max_knn_score > 0:
+        context_warning += f"\n⚠️ NOTE: KNN score is marginal ({max_knn_score:.2f}). Visual similarity alone is insufficient for confident diagnosis.\n"
+    elif max_knn_score < 3.0:
+        context_warning += "\n⚠️ NOTE: KNN scores are very low, indicating weak visual similarity. Prefer 'insufficient evidence'.\n"
 
     return f"""CLINICAL REPORT:
 {report_text}{context_warning}
@@ -284,7 +289,7 @@ def run_multimodal_rag(
     # 3) kNN vote with adaptive threshold
     # If report is generic, require higher evidence
     is_generic = is_generic_report(report_text)
-    threshold = 3.0 if is_generic else 2.5
+    threshold = 4.5 if is_generic else 2.5
     
     knn_candidates = knn_vote_labels(
         cases_res["metadatas"][0],
@@ -292,6 +297,13 @@ def run_multimodal_rag(
         topn=3,
         min_score_threshold=threshold
     )
+    
+    # Additional check: even if threshold is passed, if score is marginal (<5.0) and report is generic,
+    # treat as insufficient evidence to avoid over-diagnosis
+    top_score = knn_candidates[0][1] if knn_candidates and knn_candidates[0][0] != "insufficient_evidence" else 0.0
+    if is_generic and top_score < 5.0 and top_score > 0:
+        print(f"[INFO] Generic report with marginal KNN score ({top_score:.2f}). Treating as insufficient evidence.")
+        knn_candidates = [("insufficient_evidence", top_score)] + knn_candidates[:2]
     
     # If kNN returns "insufficient_evidence" or very low scores, check for "normal" in report
     if knn_candidates[0][0] in ["insufficient_evidence", "unknown"]:

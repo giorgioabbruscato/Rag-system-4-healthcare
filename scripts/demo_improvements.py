@@ -36,10 +36,10 @@ def demo_scenario_1():
     for meta, dist in zip(metas, dists):
         print(f"  - {meta['diagnosis_label_raw']}: distance={dist}")
     
-    # With adaptive threshold (3.0 for generic reports)
-    candidates = knn_vote_labels(metas, dists, topn=3, min_score_threshold=3.0)
+    # With adaptive threshold (4.5 for generic reports)
+    candidates = knn_vote_labels(metas, dists, topn=3, min_score_threshold=4.5)
     
-    print(f"\nFiltered Candidates (threshold=3.0 for generic report):")
+    print(f"\nFiltered Candidates (threshold=4.5 for generic report):")
     for label, score in candidates:
         print(f"  - {label}: score={score:.3f}")
     

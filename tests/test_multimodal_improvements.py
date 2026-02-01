@@ -114,9 +114,26 @@ class TestIntegrationScenarios:
         ]
         dists = [0.7, 0.75]
         
-        candidates = knn_vote_labels(metas, dists, topn=3, min_score_threshold=3.0)
+        candidates = knn_vote_labels(metas, dists, topn=3, min_score_threshold=4.5)
         
         # Should indicate insufficient evidence
+        assert candidates[0][0] == "insufficient_evidence"
+    
+    def test_normal_case_with_marginal_knn_score(self):
+        """Normal case with marginal KNN score (like 4.0) should be rejected with generic report."""
+        # This simulates the real case: score=4.0 with generic report
+        metas = [
+            {"diagnosis_label_raw": "apical_aneurysm"},
+            {"diagnosis_label_raw": "apical_aneurysm"},
+            {"diagnosis_label_raw": "apical_dyskinesia"},
+        ]
+        # Distances that produce score around 4.0
+        dists = [0.25, 0.3, 0.35]
+        
+        # With high threshold for generic reports (4.5)
+        candidates = knn_vote_labels(metas, dists, topn=3, min_score_threshold=4.5)
+        
+        # Should be filtered out as insufficient
         assert candidates[0][0] == "insufficient_evidence"
     
     def test_pathology_with_detailed_report(self):
