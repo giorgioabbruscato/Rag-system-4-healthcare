@@ -165,9 +165,11 @@ Rules:
   * HIGH confidence requires BOTH strong clinical context AND supporting visual/retrieved evidence.
   * If KNN candidates show low scores (<3.0), "insufficient_evidence", or marginal scores (<5.0 with generic report), explicitly state LOW confidence.
   * **When in doubt with generic reports: prefer "Insufficient evidence for diagnosis" over speculating.**
+  * **EXCEPTION for normal findings**: If clinical report explicitly describes normal parameters (BP, HR, labs normal, no symptoms) AND visual evidence shows no abnormalities, use MEDIUM-HIGH confidence for "Normal echocardiogram" even with marginal KNN scores.
 - **For "normal" diagnosis**:
   * If retrieved cases or clinical report suggest normal findings, consider "Normal echocardiogram" as a valid diagnosis.
   * Do not over-diagnose pathology based on visual similarity alone.
+  * **When report has explicit normal clinical findings (vitals normal, no symptoms, labs normal), this provides strong evidence for normal diagnosis.**
   * **Absence of clear abnormalities in a generic report context should suggest possible normal findings.**
 - Separate evidence from text vs evidence from images.
 - For each key claim, cite either a CASE (case_id) or a GUIDELINE (source+chunk).
@@ -202,6 +204,28 @@ def is_generic_report(report_text: str) -> bool:
     if len(text_lower) < 100 or any(phrase in text_lower for phrase in generic_phrases):
         return True
     return False
+
+def has_explicit_normal_findings(report_text: str) -> bool:
+    """Check if report explicitly describes normal clinical findings."""
+    text_lower = report_text.lower()
+    
+    # Keywords indicating normal findings
+    normal_indicators = [
+        "no symptoms",
+        "no relevant",
+        "within normal",
+        "normal range",
+        "normal limit",
+        "unremarkable",
+        "asymptomatic",
+        "normal physiological"
+    ]
+    
+    # Count how many normal indicators are present
+    normal_count = sum(1 for indicator in normal_indicators if indicator in text_lower)
+    
+    # If report has 2+ normal indicators and is detailed (>150 chars), likely explicit normal
+    return normal_count >= 2 and len(text_lower) > 150
 
 def build_user_payload(
     report_text: str,
@@ -243,13 +267,23 @@ def build_user_payload(
     
     # Add context quality warning
     context_warning = ""
+    has_explicit_normal = has_explicit_normal_findings(report_text)
+    
     if is_generic_report(report_text):
         context_warning = "\n⚠️ CRITICAL: Clinical report is generic/minimal with NO specific clinical findings.\n"
         context_warning += "   → Use LOW confidence. Consider 'Insufficient evidence' or 'possibly Normal' if no clear abnormalities.\n"
+    elif has_explicit_normal:
+        context_warning = "\n✅ NOTE: Clinical report contains explicit NORMAL findings (no symptoms, parameters within normal ranges).\n"
+        context_warning += "   → If visual evidence shows no clear abnormalities, 'Normal echocardiogram' with MEDIUM-HIGH confidence is appropriate.\n"
     
     max_knn_score = knn_candidates[0][1] if knn_candidates else 0.0
     if max_knn_score < 5.0 and max_knn_score > 0:
-        context_warning += f"\n⚠️ NOTE: KNN score is marginal ({max_knn_score:.2f}). Visual similarity alone is insufficient for confident diagnosis.\n"
+        severity = "marginal" if max_knn_score >= 3.0 else "low"
+        context_warning += f"\n⚠️ NOTE: KNN score is {severity} ({max_knn_score:.2f}). "
+        if has_explicit_normal:
+            context_warning += "However, with explicit normal clinical findings, visual similarity is less critical.\n"
+        else:
+            context_warning += "Visual similarity alone is insufficient for confident diagnosis.\n"
     elif max_knn_score < 3.0:
         context_warning += "\n⚠️ NOTE: KNN scores are very low, indicating weak visual similarity. Prefer 'insufficient evidence'.\n"
 
@@ -308,8 +342,15 @@ def run_multimodal_rag(
     # If kNN returns "insufficient_evidence" or very low scores, check for "normal" in report
     if knn_candidates[0][0] in ["insufficient_evidence", "unknown"]:
         report_lower = report_text.lower()
-        if any(term in report_lower for term in ["normal", "no abnormalities", "unremarkable"]):
-            knn_candidates = [("normal_echo", 2.0)] + knn_candidates[:2]
+        has_normal_keywords = any(term in report_lower for term in ["normal", "no abnormalities", "unremarkable"])
+        has_explicit_normal = has_explicit_normal_findings(report_text)
+        
+        if has_normal_keywords or has_explicit_normal:
+            # Give higher score if report explicitly describes normal findings
+            score = 4.0 if has_explicit_normal else 2.0
+            knn_candidates = [("normal_echo", score)] + knn_candidates[:2]
+            if has_explicit_normal:
+                print(f"[INFO] Report has explicit normal findings. Score boosted to {score:.1f} for 'normal_echo' candidate.")
 
     # 4) Frames
     if query_frame_paths is None:

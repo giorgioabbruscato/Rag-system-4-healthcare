@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from scripts.multimodal_rag_openai import (
     is_generic_report,
+    has_explicit_normal_findings,
     knn_vote_labels,
 )
 
@@ -43,6 +44,45 @@ class TestGenericReportDetection:
         report = "Patient with chest pain. Echo shows some wall motion abnormalities."
         # This is short (<100 chars after strip), so should be generic
         assert is_generic_report(report) is True
+
+
+class TestExplicitNormalDetection:
+    """Test detection of reports with explicit normal findings."""
+    
+    def test_detailed_normal_report(self):
+        """Report with explicit normal findings should be detected."""
+        report = """
+        The patient is a 35-year-old male with no relevant past medical history.
+        He reports no symptoms at rest or during daily activities.
+        Blood pressure is 120/80 mmHg and heart rate is 72 beats per minute,
+        both within normal physiological ranges.
+        Routine laboratory tests are within normal limits.
+        """
+        assert has_explicit_normal_findings(report) is True
+    
+    def test_short_normal_mention(self):
+        """Short report with single 'normal' mention should not trigger."""
+        report = "Echo looks normal."
+        assert has_explicit_normal_findings(report) is False
+    
+    def test_pathology_report(self):
+        """Pathology report should not trigger normal detection."""
+        report = """
+        Patient presents with dyspnea and chest pain for 3 weeks.
+        Echo shows reduced LVEF 35%, global hypokinesis, dilated LV.
+        Moderate mitral regurgitation present.
+        """
+        assert has_explicit_normal_findings(report) is False
+    
+    def test_multiple_normal_indicators(self):
+        """Report with multiple normal indicators should be detected."""
+        report = """
+        Patient asymptomatic, no complaints.
+        Physical exam unremarkable.
+        All vital signs within normal range.
+        Laboratory results within normal limits.
+        """
+        assert has_explicit_normal_findings(report) is True
 
 
 class TestKNNVoting:
