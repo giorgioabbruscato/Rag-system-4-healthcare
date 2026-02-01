@@ -112,17 +112,33 @@ def retrieve_similar_qdrant(
 def knn_vote_labels(
     case_metas: List[Dict[str, Any]],
     case_dists: List[float],
-    topn: int = 3
+    topn: int = 3,
+    min_score_threshold: float = 2.5
 ) -> List[Tuple[str, float]]:
-    """Vote on diagnosis labels weighted by distance."""
+    """Vote on diagnosis labels weighted by distance.
+    
+    Args:
+        case_metas: Metadata of retrieved cases
+        case_dists: Distances of retrieved cases
+        topn: Number of top candidates to return
+        min_score_threshold: Minimum score to accept a candidate (filters weak matches)
+    """
     if not case_metas or not case_dists:
         return [("unknown", 0.0)]
     
     scores: Dict[str, float] = {}
     for meta, dist in zip(case_metas, case_dists):
         lab = meta.get("diagnosis_label_raw", "unknown")
+        # Weight inversely proportional to distance
         w = 1.0 / (1.0 + float(dist))
         scores[lab] = scores.get(lab, 0.0) + w
+    
+    # Filter out weak candidates below threshold
+    scores = {lab: score for lab, score in scores.items() if score >= min_score_threshold}
+    
+    if not scores:
+        return [("insufficient_evidence", 0.0)]
+    
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return ranked[:topn]
 
@@ -143,6 +159,14 @@ Rules:
 - Do NOT invent measurements, findings, or patient details.
 - If evidence is insufficient, state it explicitly and list what is missing.
 - Provide confidence: low / medium / high, with a short justification.
+- **CRITICAL for confidence**:
+  * If the clinical report is generic/minimal (e.g., "Analyze this case"), assign LOW confidence even if KNN scores are high.
+  * If visual evidence alone suggests a diagnosis but lacks clinical context, use MEDIUM confidence at most.
+  * HIGH confidence requires BOTH strong clinical context AND supporting visual/retrieved evidence.
+  * If KNN candidates show low scores (<3.0) or "insufficient_evidence", explicitly state LOW confidence.
+- **For "normal" diagnosis**:
+  * If retrieved cases or clinical report suggest normal findings, consider "Normal echocardiogram" as a valid diagnosis.
+  * Do not over-diagnose pathology based on visual similarity alone.
 - Separate evidence from text vs evidence from images.
 - For each key claim, cite either a CASE (case_id) or a GUIDELINE (source+chunk).
 - Always include a Sources section:
@@ -161,13 +185,28 @@ Output format:
 
 
 
+def is_generic_report(report_text: str) -> bool:
+    """Check if report is generic/minimal without specific clinical information."""
+    generic_phrases = [
+        "analyze this",
+        "provide probable diagnosis",
+        "analyze the case",
+        "clinical analysis",
+        "echocardiography case"
+    ]
+    text_lower = report_text.lower().strip()
+    
+    # If report is very short or contains generic phrases, it's likely generic
+    if len(text_lower) < 100 or any(phrase in text_lower for phrase in generic_phrases):
+        return True
+    return False
+
 def build_user_payload(
     report_text: str,
     knn_candidates: List[Tuple[str, float]],
     cases_res: Dict[str, Any],
     guides_res: Optional[Dict[str, Any]],
 ) -> str:
-    # … stessa logica di prima …
     case_ids = cases_res["ids"][0]
     case_metas = cases_res["metadatas"][0]
     case_docs = cases_res["documents"][0]
@@ -199,9 +238,18 @@ def build_user_payload(
             )
 
     diag_lines = "\n".join([f"- {lab}: score={sc:.3f}" for lab, sc in knn_candidates])
+    
+    # Add context quality warning
+    context_warning = ""
+    if is_generic_report(report_text):
+        context_warning = "\n⚠️ NOTE: Clinical report is generic/minimal. Use LOW confidence unless visual evidence is overwhelming.\n"
+    
+    max_knn_score = knn_candidates[0][1] if knn_candidates else 0.0
+    if max_knn_score < 3.0:
+        context_warning += "\n⚠️ NOTE: KNN scores are low, indicating weak visual similarity. Consider insufficient evidence.\n"
 
     return f"""CLINICAL REPORT:
-{report_text}
+{report_text}{context_warning}
 
 KNN DIAGNOSIS CANDIDATES (from similar retrieved cases):
 {diag_lines}
@@ -233,12 +281,23 @@ def run_multimodal_rag(
         print("[INFO] No guidelines found. Continuing without guideline context.")
         guides_res = None
 
-    # 3) kNN vote
+    # 3) kNN vote with adaptive threshold
+    # If report is generic, require higher evidence
+    is_generic = is_generic_report(report_text)
+    threshold = 3.0 if is_generic else 2.5
+    
     knn_candidates = knn_vote_labels(
         cases_res["metadatas"][0],
         cases_res["distances"][0],
-        topn=3
+        topn=3,
+        min_score_threshold=threshold
     )
+    
+    # If kNN returns "insufficient_evidence" or very low scores, check for "normal" in report
+    if knn_candidates[0][0] in ["insufficient_evidence", "unknown"]:
+        report_lower = report_text.lower()
+        if any(term in report_lower for term in ["normal", "no abnormalities", "unremarkable"]):
+            knn_candidates = [("normal_echo", 2.0)] + knn_candidates[:2]
 
     # 4) Frames
     if query_frame_paths is None:
