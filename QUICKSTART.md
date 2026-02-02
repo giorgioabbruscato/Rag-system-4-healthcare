@@ -14,6 +14,8 @@
 
 3. **Avvia il sistema**:
    ```bash
+   make start
+   # oppure
    ./start.sh
    ```
    
@@ -22,7 +24,30 @@
    - Installa dipendenze
    - **Genera dataset da file DICOM** (se non esiste `documents.jsonl`)
    - Inizializza e popola il vectorstore (auto-indexing)
-   - Avvia il backend FastAPI su http://localhost:8000
+   - **Avvia il backend FastAPI** su http://localhost:8000
+   - **Avvia Streamlit UI** su http://localhost:8501
+
+## UI Streamlit
+
+Una volta avviato, accedi a **http://localhost:8501**
+
+### Tab 1: 🔬 Analyze Case (PRINCIPALE)
+Upload un file DICOM + optional clinical report per analisi multimodale completa:
+- Estrae frame dall'ecografia
+- Recupera casi simili tramite RAG semantico
+- Genera risposta clinica assistita da GPT-4o con vision
+- Mostra fonti (case retrieval) e valutazione
+
+### Tab 2: 📤 Upload DICOM
+Upload e storage di un file DICOM senza analisi immediata.
+
+### Tab 3: 📋 Manage Files
+- Lista file caricati nel sistema
+- Elimina file specifici
+
+### Bottom Actions
+- 🔄 **Reset RAG Collections**: Soft reset (ricrea tutte le collezioni)
+- 🗑️ **Clear Session**: Pulisce lo stato della UI
 
 ## Dataset Base
 
@@ -63,95 +88,63 @@ Questo cancella e ricrea `documents.jsonl` e le immagini.
 
 ## API Endpoints
 
-### POST /chat ⚠️ [DISABILITATO - Disponibile in sviluppi futuri]
-Endpoint temporaneamente disabilitato. Attualmente il sistema è ottimizzato per l'analisi di casi specifici tramite `/analyze-case`. L'endpoint chat generico sarà riabilitato in future release per query esplorative.
-
-**Endpoint attivo**: Usa `/analyze-case` per analisi multimodale di DICOM.
-
-<details>
-<summary>Specifica originale (per sviluppi futuri)</summary>
-
-Query RAG con retrieval da cases/guidelines.
+### POST /analyze-case ✅ [PRINCIPALE]
+Endpoint principale: upload DICOM + optional report per analisi multimodale completa.
 
 ```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "What are signs of dilated cardiomyopathy?",
-    "model": "gpt-4o",
-    "rag_type": "cases",
-    "evaluate": false
-  }'
+curl -X POST http://localhost:8000/analyze-case \
+  -F "file=@/path/to/file.dcm" \
+  -F "report_text=Optional clinical findings"
 ```
 
 **Parametri**:
-- `question`: domanda clinica
-- `model`: modello OpenAI (es. "gpt-4o")
-- `rag_type`: "cases" | "guidelines" | "hybrid" | "multimodal"
-- `evaluate`: bool (opzionale, per metriche)
-- `session_id`: str (opzionale)
+- `file`: file DICOM (required)
+- `report_text`: clinical report in testo (optional)
 
 **Response**:
 ```json
 {
-  "answer": "...",
-  "sources": [{"type": "case", "id": "...", "score": 0.85, "snippet": "...", "metadata": {...}}],
-  "session_id": "...",
-  "evaluation": null
+  "ok": true,
+  "filename": "IM-0001-0032.dcm",
+  "num_frames": 10,
+  "frames_dir": "/path/to/extracted/frames",
+  "analysis": {
+    "answer": "Clinical analysis text from GPT-4o...",
+    "sources": [
+      {
+        "type": "case",
+        "id": "case_123",
+        "score": 0.87,
+        "snippet": "...",
+        "metadata": {...}
+      }
+    ],
+    "evaluation": null
+  }
 }
 ```
-
-</details>
-
-### POST /upload-doc
-Upload file DICOM ed estrazione frame.
-
-```bash
-curl -X POST http://localhost:8000/upload-doc \
-  -F "file=@/path/to/file.dcm" \
-  -F "model=gpt-4o" \
-  -F "rag_type=multimodal"
-```
-
-### GET /list-docs
-Lista file caricati nel sistema.
-
-```bash
-curl "http://localhost:8000/list-docs?rag_type=cases"
-```
-
-### POST /delete-doc
-Rimuove un documento caricato.
-
-```bash
-curl -X POST http://localhost:8000/delete-doc \
-  -H "Content-Type: application/json" \
-  -d '{"file_id": "..."}'
-```
-
-### POST /flush-rag
-Reset del sistema (soft).
-
-```bash
-curl -X POST http://localhost:8000/flush-rag \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
 ## Test rapido
 
 ```bash
-# Test /list-docs (endpoint attivo)
-curl "http://localhost:8000/list-docs?rag_type=cases"
-
-# Test /analyze-case (endpoint principale)
+# Test /analyze-case (endpoint principale) da file DICOM locale
 curl -X POST http://localhost:8000/analyze-case \
   -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"
+
+# Con report opzionale
+curl -X POST http://localhost:8000/analyze-case \
+  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm" \
+  -F "report_text=Normal cardiac function"
+
+# Test /list-docs per vedere file caricati
+curl "http://localhost:8000/list-docs?rag_type=cases"
+
+# Reset RAG collections
+curl -X POST http://localhost:8000/flush-rag
 ```
 
 ## Docs interattive
 
-Apri http://localhost:8000/docs per Swagger UI.
+Apri http://localhost:8000/docs per Swagger UI con tutti gli endpoint.
 
 ## Note
 

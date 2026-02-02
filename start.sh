@@ -58,10 +58,36 @@ fi
 echo -e "\n${GREEN}[5/5] Initializing vectorstore (auto-indexing)...${NC}"
 python3 -c "from scripts.index_Qdrant import get_vectorstore; get_vectorstore(); print('✓ Vectorstore ready')"
 
-# 5. Start FastAPI backend
-echo -e "\n${BLUE}=== Starting FastAPI Backend ===${NC}"
-echo "Backend will be available at: http://localhost:8000"
-echo "API docs at: http://localhost:8000/docs"
-echo -e "\nPress Ctrl+C to stop\n"
+# 6. Start both FastAPI backend and Streamlit
+echo -e "\n${BLUE}=== Starting Services ===${NC}"
+echo "Backend API: http://localhost:8000"
+echo "API docs: http://localhost:8000/docs"
+echo "Streamlit UI: http://localhost:8501"
+echo -e "\nPress Ctrl+C to stop all services\n"
 
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+# Start FastAPI in background
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000 &
+API_PID=$!
+
+# Give API time to start
+sleep 2
+
+# Start Streamlit (will run in foreground)
+# Disable email prompt and telemetry for automated startup
+STREAMLIT_SERVER_HEADLESS=true streamlit run app/streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true &
+STREAMLIT_PID=$!
+
+# Function to cleanup on exit
+cleanup() {
+    echo -e "\n${BLUE}Stopping services...${NC}"
+    kill $API_PID 2>/dev/null || true
+    kill $STREAMLIT_PID 2>/dev/null || true
+    echo "✓ Services stopped"
+    exit 0
+}
+
+# Trap Ctrl+C and other termination signals
+trap cleanup SIGINT SIGTERM
+
+# Wait for both processes
+wait

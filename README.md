@@ -14,33 +14,7 @@ Sistema RAG (Retrieval-Augmented Generation) multimodale per supporto decisional
 
 📖 See [ANONYMIZATION.md](ANONYMIZATION.md) for details.
 
-## 🚀 Quick Start (Docker - Consigliato)
-
-```bash
-# Avvia tutto automaticamente
-./start-docker.sh
-# oppure
-make start
-```
-
-Accedi ai servizi:
-- **Streamlit UI**: http://localhost:8501
-- **API Docs**: http://localhost:8000/docs  
-- **Qdrant Dashboard**: http://localhost:6333/dashboard
-
-```bash
-# Spegni tutto
-./stop-docker.sh
-# oppure
-make stop
-
-# Controlla stato
-make status
-```
-
-📖 Guida completa: [QUICKSTART.md](QUICKSTART.md)
-
-## Quick Start (Manuale)
+## 🚀 Quick Start (Manuale - Consigliato)
 
 ```bash
 # 1. Setup ambiente
@@ -49,11 +23,34 @@ source .venv/bin/activate
 # 2. Imposta API key OpenAI
 export OPENAI_API_KEY="sk-..."
 
-# 3. Avvia il sistema (auto-build dataset + auto-indexing)
-./start.sh
+# 3. Avvia il sistema (auto-build dataset + auto-indexing + Streamlit)
+make start
 ```
 
-Il backend sarà disponibile su **http://localhost:8000** (docs: http://localhost:8000/docs)
+Il sistema avvia **automaticamente**:
+- ✅ Backend FastAPI: http://localhost:8000
+- ✅ Streamlit UI: http://localhost:8501  
+- ✅ Vectorstore con auto-indexing
+
+**Accedi a**:
+- **UI Streamlit**: http://localhost:8501 (🔬 Analyze, 📤 Upload, 📋 Manage)
+- **API Docs**: http://localhost:8000/docs
+
+📖 Guida completa: [QUICKSTART.md](QUICKSTART.md)
+
+## 🐳 Quick Start (Docker)
+
+```bash
+# Avvia con Docker
+./start-docker.sh
+# oppure
+make docker-up
+```
+
+```bash
+# Spegni tutto
+make docker-down
+```
 
 📖 **Guida completa API**: vedi [QUICKSTART.md](QUICKSTART.md)
 
@@ -78,13 +75,13 @@ Il backend sarà disponibile su **http://localhost:8000** (docs: http://localhos
 # Rigenerare dataset (se aggiungi DICOM in data/raw_data/)
 ./rebuild_dataset.sh
 
-# Test manuale vectorstore + indexing
-python3 src/vectorstore_manager.py
-
-# Test API endpoint (Nota: /chat attualmente disabilitato, usa /analyze-case)
+# Test API endpoint - Analyze case
 curl -X POST http://localhost:8000/analyze-case \
   -F "file=@data/raw_data/Normal/IM-0001-0032.dcm" \
-  -F "report_text=Patient case for analysis"
+  -F "report_text=Optional clinical report"
+
+# Vedere tutti gli endpoint disponibili
+# Visita http://localhost:8000/docs
 ```
 
 ## Dettagli Tecnici
