@@ -10,12 +10,6 @@ services:
       - qdrant_storage:/qdrant/storage
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     networks:
       - rag-network
 
@@ -39,13 +33,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       qdrant:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/list-docs?rag_type=cases')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+        condition: service_started
     networks:
       - rag-network
     restart: unless-stopped
@@ -66,13 +54,7 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+        condition: service_started
     networks:
       - rag-network
     restart: unless-stopped
