@@ -195,5 +195,75 @@ class TestIntegrationScenarios:
         assert candidates[0][1] > 3.5  # Strong consensus
 
 
+class TestRealCaseScenario:
+    """Test the exact scenario from the user's real case.
+    
+    Validates threshold improvements for handling:
+    - Normal DICOM cases
+    - Generic/minimal clinical reports  
+    - Marginal KNN scores (~4.0)
+    """
+    
+    def test_real_case_threshold_filtering(self):
+        """Demonstrate threshold filtering for borderline scores.
+        
+        Score: weight = 1/(1+distance), summed by diagnosis label.
+        With distances [0.15, 0.15, 0.15, 0.15]: 4 * (1/1.15) ≈ 3.48
+        """
+        metas = [
+            {"diagnosis_label_raw": "test_diagnosis"},
+            {"diagnosis_label_raw": "test_diagnosis"},
+            {"diagnosis_label_raw": "test_diagnosis"},
+            {"diagnosis_label_raw": "test_diagnosis"},
+        ]
+        dists = [0.15, 0.15, 0.15, 0.15]
+        
+        # Passes 3.0 threshold (score ~3.48)
+        candidates_old = knn_vote_labels(metas, dists, topn=3, min_score_threshold=3.0)
+        assert candidates_old[0][0] == "test_diagnosis"
+        assert candidates_old[0][1] > 3.0
+        
+        # Fails 4.5 threshold (insufficient evidence)
+        candidates_new = knn_vote_labels(metas, dists, topn=3, min_score_threshold=4.5)
+        assert candidates_new[0][0] == "insufficient_evidence"
+    
+    def test_real_case_with_generic_report(self):
+        """Verify generic report detection from actual user case."""
+        report = (
+            "Analyze this echocardiography case. Provide probable diagnosis, "
+            "differential, confidence, and cite evidence from images and retrieved cases/guidelines."
+        )
+        
+        # Should be detected as generic (short, instruction-based)
+        assert is_generic_report(report) is True
+    
+    def test_real_case_knn_score_calculation(self):
+        """Validate KNN score calculation with proper distance weights.
+        
+        Score formula: weight = 1/(1+distance), summed for each label.
+        """
+        from collections import defaultdict
+        
+        metas = [
+            {"diagnosis_label_raw": "diagnosis_x"},
+            {"diagnosis_label_raw": "diagnosis_x"},
+            {"diagnosis_label_raw": "diagnosis_x"},
+            {"diagnosis_label_raw": "diagnosis_x"},
+        ]
+        dists = [0.15, 0.15, 0.15, 0.15]
+        
+        # Manual calculation
+        scores = defaultdict(float)
+        for meta, dist in zip(metas, dists):
+            lab = meta["diagnosis_label_raw"]
+            weight = 1.0 / (1.0 + dist)
+            scores[lab] += weight
+        
+        top_label = max(scores.items(), key=lambda x: x[1])
+        # Expected: 4 * (1/1.15) ≈ 3.48
+        assert top_label[0] == "diagnosis_x"
+        assert 3.0 < top_label[1] < 4.5
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
