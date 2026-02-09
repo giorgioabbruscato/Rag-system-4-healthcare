@@ -9,10 +9,7 @@ BASE_URL = f"http://{backend_host}:8000"
 
 st.set_page_config(page_title="Multimodal RAG", layout="wide")
 
-st.sidebar.title("Settings")
-model = st.sidebar.selectbox("Model", ["gpt-4o-mini", "llama3", "mistral"])
-rag_type = st.sidebar.selectbox("RAG type", ["cases", "guidelines", "hybrid"])
-st.sidebar.checkbox("Enable evaluation", key="enable_evaluation", value=False)
+rag_type = "hybrid"  # Default RAG type
 
 if "session_id" not in st.session_state:
     st.session_state.session_id = None
