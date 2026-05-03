@@ -135,10 +135,10 @@ def export_representative_frames(ds, case_id: str, n=10):
 
 def compute_simple_video_features(ds, max_frames=64):
     """
-    Estrae feature semplici dal cine US:
-    - mean_intensity: media intensità normalizzata
-    - motion_energy: differenza media tra frame consecutivi
-    - motion_std: deviazione standard del movimento
+    Extract simple features from ultrasound cine:
+    - mean_intensity: normalized mean intensity
+    - motion_energy: mean difference between consecutive frames
+    - motion_std: standard deviation of motion
     """
     try:
         arr = ds.pixel_array  # shape: (frames, H, W) o (frames, H, W, 3)
@@ -146,25 +146,25 @@ def compute_simple_video_features(ds, max_frames=64):
         if num_frames <= 1:
             return {}
 
-        # sottocampiona per velocità
+        # subsample for speed
         use_n = min(num_frames, max_frames)
         idxs = np.linspace(0, num_frames - 1, use_n, dtype=int)
         x = arr[idxs]
 
-        # se colore -> converti a grayscale semplice (mean sui canali)
+        # if color -> convert to simple grayscale (mean across channels)
         if x.ndim == 4 and x.shape[-1] == 3:
             x = x.mean(axis=-1)
 
         x = x.astype(np.float32)
 
-        # normalizza [0,1] se sembra 8-bit
+        # normalize [0,1] if it looks like 8-bit
         maxv = x.max()
         if maxv > 1.5:
             x = x / 255.0
 
         mean_intensity = float(x.mean())
 
-        # movimento: differenza assoluta tra frame consecutivi
+        # motion: absolute difference between consecutive frames
         diffs = np.abs(x[1:] - x[:-1])
         motion_per_step = diffs.mean(axis=(1, 2))  # (use_n-1,)
         motion_energy = float(motion_per_step.mean())

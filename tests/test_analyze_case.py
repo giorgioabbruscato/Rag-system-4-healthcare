@@ -64,7 +64,7 @@ def test_analyze_case_with_stubbed_rag(sample_dicom_path, monkeypatch):
             "/analyze-case",
             files=files,
             data={
-                "report_text": "Analizza questo caso con sospetta cardiomiopatia."
+                "report_text": "Analyze this case with suspected cardiomyopathy."
             },
         )
 

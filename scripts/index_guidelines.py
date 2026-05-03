@@ -34,17 +34,17 @@ def chunk_text(text, chunk_size=800, overlap=150):
 # -----------------------------
 # SETUP: Qdrant Vectorstore
 # -----------------------------
-# puoi usare location=":memory:" per test o:
+# you can use location=":memory:" for tests or:
 # vectorstore = QdrantVectorstore(host="localhost", port=6333)
 vectorstore = QdrantVectorstore(location=":memory:")
 
-# config: dimensioni dell’embedding
+# config: embedding dimensions
 vector_config = [
     VectorConfig(name="text_embeddings", dimensions=384)
-    # 384 è la dimensione di "all-MiniLM-L6-v2"
+    # 384 is the dimension of "all-MiniLM-L6-v2"
 ]
 
-# crea la collection "guidelines" (se già esiste la ricrea)
+# create the "guidelines" collection (if it already exists, recreate it)
 try:
     vectorstore.delete_collection("guidelines")
 except Exception:
@@ -56,11 +56,11 @@ vectorstore.create_collection(
 )
 
 # --- EMBEDDING (local) ---
-# definisce un “adapter” che prende il testo e genera embeddings
-# usando SentenceTransformers e poi li passa a Qdrant
+# defines an adapter that takes text and generates embeddings
+# using SentenceTransformers and then passes them to Qdrant
 class LocalEmbedder:
     def embed(self, texts: list[str]) -> list[list[float]]:
-        # normalize_embeddings=True come nel tuo script Chroma
+        # normalize_embeddings=True as in your Chroma script
         return embedder_local.encode(texts, normalize_embeddings=True).tolist()
 
 local_embedder = LocalEmbedder()
@@ -97,7 +97,7 @@ for path in glob.glob(os.path.join(GUIDELINES_DIR, "*.txt")):
         ids.append(doc_id)
         idx += 1
 
-# --- GENERA EMBEDDING (local) ---
+# --- GENERATE EMBEDDINGS (local) ---
 embeddings = local_embedder.embed(documents)
 
 # --- insert in Qdrant ---

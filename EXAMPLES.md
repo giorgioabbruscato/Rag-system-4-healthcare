@@ -1,19 +1,19 @@
-# Esempi Pratici - RAG Healthcare
+# Practical Examples - RAG Healthcare
 
-> ⚠️ **Nota**: Gli esempi con `/chat` sono attualmente disabilitati. Il sistema è ottimizzato per analisi multimodale tramite `/analyze-case`. L'endpoint `/chat` sarà riabilitato in sviluppi futuri per query esplorative generiche.
+> ⚠️ **Note**: Examples using `/chat` are currently disabled. The system is optimized for multimodal analysis through `/analyze-case`. The `/chat` endpoint will be re-enabled in future development for generic exploratory queries.
 
-## 1. Avvio Sistema
+## 1. Start the system
 
 ```bash
-# Terminal 1: Avvia backend
+# Terminal 1: Start backend
 export OPENAI_API_KEY="sk-..."
 ./start.sh
 
-# Output atteso:
+# Expected output:
 # [1/5] Checking Python environment... ✓
 # [2/5] Checking dependencies... ✓
-# [3/5] Building dataset from DICOM files... (se prima volta)
-#       ✓ Dataset already exists (altrimenti)
+# [3/5] Building dataset from DICOM files... (first run)
+#       ✓ Dataset already exists (otherwise)
 # [4/5] Checking environment variables... ✓
 # [5/5] Initializing vectorstore...
 #       [VectorstoreManager] Indexed 26 cases. ✓
@@ -22,16 +22,14 @@ export OPENAI_API_KEY="sk-..."
 # INFO: Uvicorn running on http://0.0.0.0:8000
 ```
 
-## 2. Query RAG - Casi Simili [DISABILITATO - Sviluppo futuro]
+## 2. RAG Query - Similar Cases [DISABLED - Future Development]
 
 <details>
-<summary>⚠️ Esempio per sviluppi futuri (endpoint attualmente disabilitato)</summary>
+<summary>⚠️ Example for future development (endpoint currently disabled)</summary>
 
 ```bash
-# Cerca casi simili a cardiomiopatia dilatata
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
+# Search similar cases for dilated cardiomyopathy
+curl -X POST http://localhost:8000/chat   -H "Content-Type: application/json"   -d '{
     "question": "What are the echocardiographic findings in dilated cardiomyopathy?",
     "model": "gpt-4o",
     "rag_type": "cases",
@@ -62,57 +60,50 @@ curl -X POST http://localhost:8000/chat \
 
 </details>
 
-## 3. Query RAG - Guidelines [DISABILITATO - Sviluppo futuro]
+## 3. RAG Query - Guidelines [DISABLED - Future Development]
 
 <details>
-<summary>⚠️ Esempio per sviluppi futuri (endpoint attualmente disabilitato)</summary>
+<summary>⚠️ Example for future development (endpoint currently disabled)</summary>
 
 ```bash
-# Cerca nelle linee guida
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
+# Search guideline content
+curl -X POST http://localhost:8000/chat   -H "Content-Type: application/json"   -d '{
     "question": "What is the normal echo appearance of the left ventricle?",
     "model": "gpt-4o",
     "rag_type": "guidelines"
   }' | jq .
 
-# Recupera chunk rilevanti da:
+# Retrieves relevant chunks from:
 # - normal_echo_background.txt
-# - dilated_cardiomyopathy_background.txt (per contrasto)
+# - dilated_cardiomyopathy_background.txt (for contrast)
 ```
 
 </details>
 
-## 4. Query RAG - Hybrid (Cases + Guidelines) [DISABILITATO - Sviluppo futuro]
+## 4. RAG Query - Hybrid (Cases + Guidelines) [DISABLED - Future Development]
 
 <details>
-<summary>⚠️ Esempio per sviluppi futuri (endpoint attualmente disabilitato)</summary>
+<summary>⚠️ Example for future development (endpoint currently disabled)</summary>
 
 ```bash
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{
+curl -X POST http://localhost:8000/chat   -H "Content-Type: application/json"   -d '{
     "question": "Compare normal vs pathological septal motion",
     "model": "gpt-4o",
     "rag_type": "hybrid"
   }' | jq .
 
-# Recupera:
-# - Casi normali e patologici dal vectorstore cases
-# - Background teorico dal vectorstore guidelines
+# Retrieves:
+# - Normal and pathological cases from the cases vectorstore
+# - Theoretical background from the guidelines vectorstore
 ```
 
 </details>
 
-## 5. Upload DICOM e Estrazione Frame
+## 5. Upload DICOM and extract frames
 
 ```bash
-# Upload nuovo caso DICOM
-curl -X POST http://localhost:8000/upload-doc \
-  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm" \
-  -F "model=gpt-4o" \
-  -F "rag_type=multimodal" | jq .
+# Upload new DICOM case
+curl -X POST http://localhost:8000/upload-doc   -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"   -F "model=gpt-4o"   -F "rag_type=multimodal" | jq .
 
 # Response:
 # {
@@ -123,7 +114,7 @@ curl -X POST http://localhost:8000/upload-doc \
 # }
 ```
 
-## 6. Lista Documenti Caricati
+## 6. List uploaded documents
 
 ```bash
 curl "http://localhost:8000/list-docs?rag_type=cases" | jq .
@@ -140,12 +131,10 @@ curl "http://localhost:8000/list-docs?rag_type=cases" | jq .
 # }
 ```
 
-## 7. Cancella Documento
+## 7. Delete a document
 
 ```bash
-curl -X POST http://localhost:8000/delete-doc \
-  -H "Content-Type: application/json" \
-  -d '{"file_id": "current_case_123"}' | jq .
+curl -X POST http://localhost:8000/delete-doc   -H "Content-Type: application/json"   -d '{"file_id": "current_case_123"}' | jq .
 
 # Response:
 # {
@@ -154,10 +143,10 @@ curl -X POST http://localhost:8000/delete-doc \
 # }
 ```
 
-## 8. Test Manuale Vectorstore
+## 8. Manual vectorstore test
 
 ```bash
-# Test retrieval diretto
+# Direct retrieval test
 python3 src/vectorstore_manager.py
 
 # Output:
@@ -166,7 +155,7 @@ python3 src/vectorstore_manager.py
 # [VectorstoreManager] Auto-indexing collections...
 # [VectorstoreManager] ✓ Indexed 26 cases.
 # [VectorstoreManager] ✓ Indexed 13 guideline files.
-# 
+#
 # Test search: 'dilated cardiomyopathy with reduced ejection fraction'
 # Found 3 results:
 #   1. 36ff771bde40 - Normal
@@ -177,13 +166,13 @@ python3 src/vectorstore_manager.py
 #      Ultrasound multiframe study. View: Unknown...
 ```
 
-## 9. Rigenerare Dataset
+## 9. Rebuild dataset
 
 ```bash
-# Aggiungi nuovi DICOM in data/raw_data/
+# Add new DICOM files to data/raw_data/
 cp /path/to/new_study.dcm data/raw_data/Normal/
 
-# Rigenera dataset
+# Rebuild dataset
 ./rebuild_dataset.sh
 
 # Output:
@@ -193,42 +182,42 @@ cp /path/to/new_study.dcm data/raw_data/Normal/
 # Removing old dataset...
 # Building dataset from DICOM files...
 # ✓ Dataset built successfully!
-#   Total documents: 297  (se aggiungi 1 caso)
+#   Total documents: 297  (if you add 1 case)
 #   Case cards: 27
 #   Frames: 270
 
-# Riavvia backend per re-indexing
+# Restart backend for re-indexing
 ./start.sh
 ```
 
-## 10. Swagger UI - Docs Interattive
+## 10. Swagger UI - Interactive docs
 
 ```bash
-# Apri browser su:
+# Open browser:
 open http://localhost:8000/docs
 
-# Interfaccia grafica per:
-# - Testare tutti gli endpoint
-# - Vedere schema Request/Response
-# - Eseguire query direttamente dal browser
+# Graphical interface to:
+# - Test all endpoints
+# - View request/response schemas
+# - Run requests directly from the browser
 ```
 
-## 11. Health Check
+## 11. Health check
 
 ```bash
-# Verifica che il backend sia attivo
+# Verify backend is active
 curl http://localhost:8000/docs | head -5
 
-# Output: HTML della pagina Swagger (status 200)
+# Output: Swagger page HTML (status 200)
 ```
 
-## 12. Script Multimodale Standalone
+## 12. Standalone multimodal script
 
 ```bash
-# Test pipeline RAG multimodale (fuori dal backend)
+# Test multimodal RAG pipeline (outside backend)
 python3 scripts/multimodal_rag_openai.py
 
-# Input interattivo:
+# Interactive input:
 # Paste the clinical report (finish with an empty line):
 # > Patient presents with dyspnea on exertion.
 # > Echo shows dilated LV with reduced EF.
@@ -237,22 +226,21 @@ python3 scripts/multimodal_rag_openai.py
 # > data/current_case_frames
 #
 # --- MODEL OUTPUT ---
-# (GPT-4o response con diagnosis + differential + evidence + sources)
+# (GPT-4o response with diagnosis + differential + evidence + sources)
 ```
 
-## 13. Analizza Dataset Generato
+## 13. Analyze generated dataset
 
 ```bash
-# Conta documenti per tipo
+# Count documents by type
 jq -r '.metadata.document_type' data/dataset_built/documents.jsonl | sort | uniq -c
 
 # Output:
 #  26 case_card
 # 260 frame
 
-# Conta casi per diagnosis
-jq -r '.metadata.diagnosis_label_pretty' data/dataset_built/documents.jsonl | \
-  grep -v null | sort | uniq -c
+# Count cases by diagnosis
+jq -r '.metadata.diagnosis_label_pretty' data/dataset_built/documents.jsonl |   grep -v null | sort | uniq -c
 
 # Output:
 # 100 Normal
@@ -260,18 +248,15 @@ jq -r '.metadata.diagnosis_label_pretty' data/dataset_built/documents.jsonl | \
 #  10 Normal function mitral valve prolapse
 #  10 Dilated cardiomyopathy with global dysfunction
 #  40 Inferoapical septal akinesia
-# ... (14 categorie totali)
+# ... (14 categories total)
 #  40 Inferoapical septal akinesia
 ```
 
-## 14. Estrai Frame da Singolo DICOM
+## 14. Extract frames from a single DICOM
 
 ```bash
-# Estrai 12 frame uniformemente spaziati
-python3 scripts/dicom_to_frames_current.py \
-  --dicom data/raw_data/Normal/IM-0001-0032.dcm \
-  --out data/test_frames \
-  --n 12
+# Extract 12 uniformly spaced frames
+python3 scripts/dicom_to_frames_current.py   --dicom data/raw_data/Normal/IM-0001-0032.dcm   --out data/test_frames   --n 12
 
 # Output:
 # DICOM: data/raw_data/Normal/IM-0001-0032.dcm
@@ -283,69 +268,69 @@ python3 scripts/dicom_to_frames_current.py \
 ## 15. Debugging
 
 ```bash
-# Check logs backend
-tail -f uvicorn_log.txt  # (se rediretti output)
+# Check backend logs
+tail -f uvicorn_log.txt  # (if output is redirected)
 
-# Check vectorstore in memoria
+# Check in-memory vectorstore
 python3 -c "
 from src.vectorstore_manager import get_vectorstore
 vs = get_vectorstore()
 print('Vectorstore ready')
 "
 
-# Check documenti indicizzati
+# Check indexed documents
 wc -l data/dataset_built/documents.jsonl
 
-# Check immagini estratte
+# Check extracted images
 find data/dataset_built/images -name "*.png" | wc -l
 
-# Check dipendenze
+# Check dependencies
 pip list | grep -E "qdrant|datapizza|sentence"
 ```
 
-## 16. Performance Tips
+## 16. Performance tips
 
 ```bash
-# Ridurre memoria: riduci numero di frame estratti
-# In scripts/build_dataset.py, riga export_representative_frames:
-export_representative_frames(ds, case_id, n=5)  # invece di 10
+# Lower memory usage: reduce number of extracted frames
+# In scripts/build_dataset.py, export_representative_frames:
+export_representative_frames(ds, case_id, n=5)  # instead of 10
 
-# Velocizzare indexing: riduci max_frames per feature extraction
+# Speed up indexing: reduce max_frames for feature extraction
 # In scripts/build_dataset.py, compute_simple_video_features:
-compute_simple_video_features(ds, max_frames=32)  # invece di 64
+compute_simple_video_features(ds, max_frames=32)  # instead of 64
 
-# Passare a Qdrant persistente (evita re-indexing ogni restart)
+# Switch to persistent Qdrant (avoid re-indexing on each restart)
 docker run -d -p 6333:6333 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
-# Poi modifica vectorstore_manager.py per usare host="localhost"
+# Then update vectorstore_manager.py to use host="localhost"
 ```
 
-## 17. Common Errors
+## 17. Common errors
 
 ### Error: "No module named 'sentence_transformers'"
 ```bash
-# Soluzione: attiva ambiente e reinstalla
+# Fix: activate environment and reinstall
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ### Error: "documents.jsonl not found"
 ```bash
-# Soluzione: genera dataset
+# Fix: build dataset
 python3 scripts/build_dataset.py
 ```
 
 ### Error: "OPENAI_API_KEY not set"
 ```bash
-# Soluzione: imposta variabile
+# Fix: set variable
 export OPENAI_API_KEY="sk-..."
-# Verifica
+# Verify
 echo $OPENAI_API_KEY
 ```
 
 ### Error: "Port 8000 already in use"
 ```bash
-# Soluzione: cambia porta o killa processo
-lsof -ti:8000 | xargs kill -9
-# Oppure usa altra porta
+# Inspect the process using port 8000 and stop it manually
+lsof -nP -iTCP:8000 -sTCP:LISTEN
+# Or use another port
 uvicorn api.main:app --port 8001
 ```

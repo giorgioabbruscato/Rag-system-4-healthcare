@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Add src to path per import del vectorstore_manager
+# Add src to path to import vectorstore_manager
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from scripts.index_Qdrant import get_vectorstore, get_embedder
@@ -18,7 +18,7 @@ from scripts.index_Qdrant import get_vectorstore, get_embedder
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "dataset_built"))
 
-# Usa il vectorstore manager (auto-indexing al primo utilizzo)
+# Use the vectorstore manager (auto-indexing on first use)
 vectorstore = get_vectorstore()
 embedder = get_embedder()
 
@@ -30,7 +30,7 @@ MAX_QUERY_FRAMES = 12
 MAX_SIMILAR_FRAMES_TOTAL = 12
 
 MODEL_VISION = "gpt-4o"
-# OpenAI client dal SDK ufficiale
+# OpenAI client from the official SDK
 from openai import OpenAI
 
 # Lazy-load client to avoid import-time errors when API key is not set
@@ -88,18 +88,18 @@ def retrieve_similar_qdrant(
     q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()[0]
     
     try:
-        # search in Qdrant (vector_name deve corrispondere a quello in index_Qdrant.py)
+        # search in Qdrant (vector_name must match index_Qdrant.py)
         hits = vectorstore.search(
             collection_name=collection_name,
             query_vector=q_emb,
-            vector_name="text_embedding",  # allineato con index_Qdrant.py
+            vector_name="text_embedding",  # aligned with index_Qdrant.py
             k=k
         )
     except Exception as e:
         print(f"[WARNING] Search failed for collection '{collection_name}': {e}")
         hits = []
     
-    # gestisci risultati vuoti
+    # handle empty results
     if not hits:
         return {
             "ids": [[]],
@@ -108,7 +108,7 @@ def retrieve_similar_qdrant(
             "distances": [[]],
         }
     
-    # convert to a structure similar a Chroma
+    # convert to a structure similar to Chroma
     # vectorstore.search returns list of Chunk objects with .id, .metadata, .text
     # Note: score is not available in Chunk objects from datapizza, use placeholder
     return {

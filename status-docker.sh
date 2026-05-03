@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RAG Healthcare System - Status Check
-# Mostra lo stato di tutti i servizi
+# Shows the status of all services
 
 echo "📊 RAG Healthcare System - Status"
 echo "===================================="
@@ -9,23 +9,23 @@ echo ""
 
 # Check Docker
 if ! command -v docker &> /dev/null; then
-    echo "❌ Docker non installato"
+    echo "❌ Docker not installed"
     exit 1
 fi
 
 if ! docker info &> /dev/null; then
-    echo "❌ Docker non è in esecuzione"
+    echo "❌ Docker is not running"
     exit 1
 fi
 
-echo "✅ Docker è attivo"
+echo "✅ Docker is running"
 echo ""
 
 # Check if services are running
 if ! docker-compose ps 2>/dev/null | grep -q "Up"; then
-    echo "ℹ️  Nessun servizio attivo"
+    echo "ℹ️  No active services"
     echo ""
-    echo "💡 Avvia i servizi: ./start-docker.sh"
+    echo "💡 Start services: ./start-docker.sh"
     exit 0
 fi
 
@@ -67,13 +67,13 @@ echo ""
 docker volume ls | grep rag
 
 echo ""
-echo "📊 Uso Risorse:"
+echo "📊 Resource Usage:"
 echo ""
-docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" $(docker-compose ps -q) 2>/dev/null || echo "Nessun container attivo"
+docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" $(docker-compose ps -q) 2>/dev/null || echo "No active containers"
 
 echo ""
-echo "💡 Comandi utili:"
+echo "💡 Useful commands:"
 echo ""
-echo "   make docker-logs         # Vedi i logs"
-echo "   ./stop-docker.sh         # Spegni tutto"
+echo "   make docker-logs         # View logs"
+echo "   ./stop-docker.sh         # Stop everything"
 echo ""

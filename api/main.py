@@ -36,7 +36,7 @@ class ChatResponse(BaseModel):
     evaluation: Optional[Any] = None
 
 
-# ENDPOINT DISABILITATO - Attualmente non in uso, necessario solo analyze-case
+# ENDPOINT DISABLED - Currently not in use, only needed for analyze-case
 # @app.post("/chat", response_model=ChatResponse)
 # def chat(req: ChatRequest):
 #     """

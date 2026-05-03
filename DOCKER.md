@@ -1,40 +1,40 @@
 # Docker Setup Guide
 
-Questo progetto è completamente containerizzato con Docker per garantire isolamento e riproducibilità.
+This project is fully containerized with Docker to ensure isolation and reproducibility.
 
-## 🏗️ Architettura
+## 🏗️ Architecture
 
-Il sistema è composto da 3 container separati:
+The system is composed of 3 separate containers:
 
-1. **qdrant** - Vector database (immagine ufficiale)
-2. **api** - Backend FastAPI (porta 8000)
-3. **streamlit** - Frontend Streamlit (porta 8501)
+1. **qdrant** - Vector database (official image)
+2. **api** - FastAPI backend (port 8000)
+3. **streamlit** - Streamlit frontend (port 8501)
 
-Tutti i container comunicano attraverso una rete Docker privata `rag-network`.
+All containers communicate through the private Docker network `rag-network`.
 
 ## 🚀 Quick Start
 
-### 1. Configurazione
+### 1. Configuration
 
-Crea un file `.env` dalla template:
+Create a `.env` file from the template:
 
 ```bash
 cp .env.example .env
 ```
 
-Modifica `.env` e inserisci la tua `OPENAI_API_KEY`.
+Edit `.env` and add your `OPENAI_API_KEY`.
 
-### 2. Avvio
+### 2. Start
 
 ```bash
-# Build e start di tutti i servizi
+# Build and start all services
 make docker-up-build
 
-# Oppure manualmente
+# Or manually
 docker-compose up -d --build
 ```
 
-### 3. Accesso
+### 3. Access
 
 - **API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
@@ -44,79 +44,79 @@ docker-compose up -d --build
 ### 4. Logs
 
 ```bash
-# Tutti i servizi
+# All services
 make docker-logs
 
-# Solo API
+# API only
 make docker-logs-api
 
-# Solo Streamlit
+# Streamlit only
 make docker-logs-streamlit
 ```
 
-## 🛠️ Comandi Utili
+## 🛠️ Useful commands
 
 ```bash
-# Build immagini
+# Build images
 make docker-build
 
-# Start servizi
+# Start services
 make docker-up
 
-# Stop servizi
+# Stop services
 make docker-down
 
-# Restart servizi
+# Restart services
 make docker-down && make docker-up
 
-# Pulire tutto (container, volumi, immagini)
+# Clean everything (containers, volumes, images)
 make docker-clean
 
-# Development mode (con hot reload)
+# Development mode (with hot reload)
 make docker-dev
 
-# Shell nei container
+# Open shell in containers
 make docker-shell-api
 make docker-shell-streamlit
 ```
 
-## 🔧 Development Mode
+## 🔧 Development mode
 
-Per sviluppo con hot reload:
+For development with hot reload:
 
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
-Questo monta i volumi in modalità read-only e abilita il reload automatico.
+This mounts source volumes in read-only mode and enables automatic reload.
 
-## 📦 Immagini Docker
+## 📦 Docker images
 
-Le immagini usano **multi-stage build** per ottimizzare le dimensioni:
+Images use **multi-stage builds** to optimize size:
 
-- **Builder stage**: Installa dipendenze con compilatori
-- **Final stage**: Solo runtime Python slim + applicazione
+- **Builder stage**: installs dependencies with compilers
+- **Final stage**: Python slim runtime + application only
 
-### Tag delle Immagini
+### Image tags
 
 ```bash
 # Local build
 rag-healthcare-api:latest
 rag-healthcare-streamlit:latest
 
-# GitHub Container Registry (quando pushate)
+# GitHub Container Registry (when pushed)
 ghcr.io/<username>/rag-healthcare-api:latest
 ghcr.io/<username>/rag-healthcare-streamlit:latest
 ```
 
 ## 🔐 GitHub Container Registry
 
-Le immagini vengono automaticamente buildare e pushate su GitHub Container Registry (GHCR) quando:
+Images are automatically built and pushed to GitHub Container Registry (GHCR) when:
 
-- Push su branch `main`
-- Creazione di tag `v*.*.*`
+- Push to branch `main`
+- Creation of tag `v*.*.*`
 
-Per usare le immagini da GHCR:
+To use images from GHCR:
 
 ```bash
 # Login
@@ -130,15 +130,15 @@ docker pull ghcr.io/<username>/rag-healthcare-streamlit:latest
 docker-compose up -d
 ```
 
-## 📊 Health Checks
+## 📊 Health checks
 
-Ogni container ha health check configurati:
+Each container has a configured health check:
 
 - **Qdrant**: `curl http://localhost:6333/health`
-- **API**: `python check http://localhost:8000/list-docs`
+- **API**: `python -c "import requests; requests.get('http://localhost:8000/list-docs?rag_type=cases')"`
 - **Streamlit**: `curl http://localhost:8501/_stcore/health`
 
-Verifica stato:
+Check status:
 
 ```bash
 docker-compose ps
@@ -147,48 +147,48 @@ make docker-ps
 
 ## 🔍 Troubleshooting
 
-### Container non parte
+### Container does not start
 
 ```bash
-# Controlla logs
+# Check logs
 docker-compose logs api
 
-# Verifica network
+# Verify network
 docker network ls
 docker network inspect rag-system-4-healthcare_rag-network
 ```
 
-### Qdrant non connette
+### Qdrant does not connect
 
 ```bash
-# Verifica health
+# Verify health
 curl http://localhost:6333/health
 
-# Rebuild container
+# Recreate container
 docker-compose up -d --force-recreate qdrant
 ```
 
-### Hot reload non funziona
+### Hot reload does not work
 
 ```bash
-# Usa docker-compose.dev.yml
+# Use docker-compose.dev.yml
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
-### Pulire e ripartire da zero
+### Clean and restart from scratch
 
 ```bash
 make docker-clean
 make docker-up-build
 ```
 
-## 🧪 Testing con Docker
+## 🧪 Testing with Docker
 
 ```bash
-# Build immagini per test
+# Build images for tests
 docker-compose build
 
-# Test health di tutti i servizi
+# Health test for all services
 docker-compose up -d
 sleep 30
 curl http://localhost:8000/list-docs?rag_type=cases
@@ -198,52 +198,50 @@ curl http://localhost:8501/_stcore/health
 docker-compose down -v
 ```
 
-## 🔒 Security Scanning
+## 🔒 Security scanning
 
-Le pipeline CI/CD includono:
+CI/CD pipelines include:
 
-- **Trivy**: Vulnerability scanning delle immagini
-- **Docker Bench**: Best practices check
-- **SARIF Upload**: Risultati su GitHub Security
+- **Trivy**: container vulnerability scanning
+- **Docker Bench**: best-practice checks
+- **SARIF Upload**: results in GitHub Security
 
-## 📐 Volumi e Persistenza
+## 📐 Volumes and persistence
 
 ```yaml
 volumes:
-  qdrant_storage:  # Dati Qdrant persistenti
-  
-  # Mount locali (development)
-  ./data:/app/data  # Dataset DICOM
+  qdrant_storage:  # Persistent Qdrant data
+
+  # Local mounts (development)
+  ./data:/app/data  # DICOM dataset
 ```
 
-### Backup Qdrant
+### Qdrant backup
 
 ```bash
 # Backup
-docker run --rm -v rag-system-4-healthcare_qdrant_storage:/data \
-  -v $(pwd)/backups:/backup alpine tar czf /backup/qdrant-backup.tar.gz /data
+docker run --rm -v rag-system-4-healthcare_qdrant_storage:/data   -v $(pwd)/backups:/backup alpine tar czf /backup/qdrant-backup.tar.gz /data
 
 # Restore
-docker run --rm -v rag-system-4-healthcare_qdrant_storage:/data \
-  -v $(pwd)/backups:/backup alpine tar xzf /backup/qdrant-backup.tar.gz -C /
+docker run --rm -v rag-system-4-healthcare_qdrant_storage:/data   -v $(pwd)/backups:/backup alpine tar xzf /backup/qdrant-backup.tar.gz -C /
 ```
 
-## 🌐 Production Deployment
+## 🌐 Production deployment
 
-Per deployment in produzione:
+For production deployment:
 
-1. Modifica `docker-compose.yml`:
-   - Rimuovi volumi di development
-   - Configura `restart: always`
-   - Usa secrets per API keys
-   - Abilita HTTPS con reverse proxy
+1. Edit `docker-compose.yml`:
+   - Remove development volumes
+   - Configure `restart: always`
+   - Use secrets for API keys
+   - Enable HTTPS with a reverse proxy
 
-2. Usa variabili ambiente:
+2. Use environment variables:
    ```bash
    ENVIRONMENT=production docker-compose up -d
    ```
 
-3. Configura reverse proxy (nginx/traefik):
+3. Configure reverse proxy (nginx/traefik):
    ```nginx
    location /api {
        proxy_pass http://localhost:8000;
@@ -253,7 +251,7 @@ Per deployment in produzione:
    }
    ```
 
-## 📚 Risorse
+## 📚 Resources
 
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Multi-stage Builds](https://docs.docker.com/build/building/multi-stage/)

@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from scripts.index_Qdrant import get_vectorstore, get_embedder
 
-# Import della pipeline multimodale
+# Import multimodal pipeline
 try:
     from scripts.multimodal_rag_openai import run_multimodal_rag
 except Exception as e:
@@ -23,11 +23,11 @@ def answer_question(
     evaluate: bool
 ) -> Dict[str, Any]:
     """
-    Gestisce la query RAG usando il vectorstore auto-indexato.
+    Handle the RAG query using the auto-indexed vectorstore.
     
     - rag_type: "cases", "guidelines", "hybrid", "multimodal"
-    - model: nome del modello OpenAI (es. "gpt-4o")
-    - evaluate: se True, calcola metriche con ragas (opzionale)
+    - model: OpenAI model name (e.g., "gpt-4o")
+    - evaluate: if True, compute metrics with ragas (optional)
     """
     
     vectorstore = get_vectorstore()
@@ -80,10 +80,10 @@ def answer_question(
         except Exception as e:
             print(f"[rag_service] Error retrieving guidelines: {e}")
     
-    # Build answer (qui puoi integrare OpenAI o altro LLM)
-    # Per ora stub semplice
+    # Build answer (you can integrate OpenAI or another LLM here)
+    # Simple stub for now
     if rag_type == "multimodal":
-        # TODO: chiamare run_multimodal_rag con frame del caso corrente
+        # TODO: call run_multimodal_rag with frames from the current case
         answer = f"[Multimodal RAG stub]\nQuery: {question}\n\nRetrieved {len(sources)} sources.\n\n{retrieved_context[:500]}..."
     else:
         answer = f"[RAG stub - {rag_type}]\nQuery: {question}\n\nRetrieved {len(sources)} sources.\n\n{retrieved_context[:500]}..."
