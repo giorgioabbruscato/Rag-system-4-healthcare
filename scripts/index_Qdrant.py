@@ -1,5 +1,5 @@
 """
-Vectorstore Manager - Singleton con pipeline datapizza per Qdrant in-memory.
+Vectorstore Manager - Singleton with datapizza pipeline for in-memory Qdrant.
 """
 import os
 import json
@@ -30,7 +30,7 @@ _initialized = False
 
 
 class LocalEmbedder:
-    """Adapter per SentenceTransformer -> embeddings."""
+    """Adapter for SentenceTransformer -> embeddings."""
     def __init__(self, model: SentenceTransformer):
         self.model = model
     
@@ -39,7 +39,7 @@ class LocalEmbedder:
 
 
 def get_vectorstore() -> QdrantVectorstore:
-    """Ritorna il vectorstore singleton, inizializzandolo se necessario."""
+    """Return the singleton vectorstore, initializing it if needed."""
     global _vectorstore, _embedder, _initialized
     
     if _vectorstore is None:
@@ -56,7 +56,7 @@ def get_vectorstore() -> QdrantVectorstore:
 
 
 def get_embedder() -> SentenceTransformer:
-    """Ritorna il sentence transformer singleton."""
+    """Return the singleton sentence transformer."""
     global _embedder
     if _embedder is None:
         _embedder = SentenceTransformer(EMB_MODEL)
@@ -64,10 +64,10 @@ def get_embedder() -> SentenceTransformer:
 
 
 def _ensure_collections_populated():
-    """Controlla e popola le collection 'cases' e 'guidelines' se vuote."""
+    """Check and populate 'cases' and 'guidelines' collections if empty."""
     global _vectorstore, _embedder
     
-    # Collection 'cases'
+    # 'cases' collection
     try:
         collections = _vectorstore.get_collections()
         collection_names = [c[0] if isinstance(c, tuple) else c for c in collections]
@@ -93,10 +93,10 @@ def _ensure_collections_populated():
 
 
 def _create_and_index_all():
-    """Crea e indicizza tutte le collection."""
+    """Create and index all collections."""
     global _vectorstore, _embedder
     
-    # Crea collection 'cases'
+    # Create 'cases' collection
     vector_config = [VectorConfig(name="text_embedding", dimensions=EMBEDDING_DIM)]
     
     try:
@@ -106,10 +106,10 @@ def _create_and_index_all():
     
     _vectorstore.create_collection("cases", vector_config=vector_config)
     
-    # Indicizza cases e frames
+    # Index cases and frames
     _index_cases()
     
-    # Crea collection 'guidelines'
+    # Create 'guidelines' collection
     try:
         _vectorstore.delete_collection("guidelines")
     except:
@@ -120,7 +120,7 @@ def _create_and_index_all():
 
 
 def _index_cases():
-    """Indicizza cases e frames da documents.jsonl."""
+    """Index cases and frames from documents.jsonl."""
     global _vectorstore, _embedder
     
     if not os.path.exists(JSONL_PATH):
@@ -129,7 +129,7 @@ def _index_cases():
     
     print(f"[IndexQdrant] Loading documents from {JSONL_PATH}...")
     
-    # Carica tutti i documenti (case_card + frame)
+    # Load all documents (case_card + frame)
     docs_text = []
     docs_metadata = []
     
@@ -137,7 +137,7 @@ def _index_cases():
         for line in f:
             obj = json.loads(line)
             doc_type = obj["metadata"].get("document_type")
-            # Indicizza sia case_card che frame
+            # Index both case_card and frame
             if doc_type not in ["case_card", "frame"]:
                 continue
             docs_text.append(obj["content"])
@@ -149,11 +149,11 @@ def _index_cases():
     
     print(f"[IndexQdrant] Embedding {len(docs_text)} documents...")
     
-    # Genera embeddings usando LocalEmbedder
+    # Generate embeddings using LocalEmbedder
     local_embedder = LocalEmbedder(_embedder)
     embeddings = local_embedder.embed(docs_text)
     
-    # Aggiungi a Qdrant
+    # Add to Qdrant
     print(f"[IndexQdrant] Adding documents to Qdrant...")
     chunks = []
     for i in range(len(docs_text)):
@@ -175,7 +175,7 @@ def _index_cases():
     
     _vectorstore.add(chunk=chunks, collection_name="cases")
     
-    # Conta i tipi di documenti indicizzati
+    # Count indexed document types
     doc_types = {}
     for m in docs_metadata:
         dt = m.get("document_type", "unknown")
@@ -186,7 +186,7 @@ def _index_cases():
 
 
 def _index_guidelines():
-    """Indicizza guidelines da file .txt."""
+    """Index guidelines from .txt files."""
     global _vectorstore, _embedder
     
     if not os.path.isdir(GUIDELINES_DIR):
@@ -233,11 +233,11 @@ def _index_guidelines():
     
     print(f"[IndexQdrant] Embedding {len(docs_text)} guideline chunks...")
     
-    # Genera embeddings
+    # Generate embeddings
     local_embedder = LocalEmbedder(_embedder)
     embeddings = local_embedder.embed(docs_text)
     
-    # Aggiungi a Qdrant
+    # Add to Qdrant
     print(f"[IndexQdrant] Adding guidelines to Qdrant...")
     chunks = []
     for i in range(len(docs_text)):
@@ -257,7 +257,7 @@ def _index_guidelines():
 
 
 def reset_collections():
-    """Elimina e ricrea tutte le collection (per testing/soft reset)."""
+    """Delete and recreate all collections (for testing/soft reset)."""
     global _vectorstore, _initialized
     
     if _vectorstore is None:
@@ -282,7 +282,7 @@ def reset_collections():
 
 
 # -----------------------------
-# CLI per test manuale
+# CLI for manual testing
 # -----------------------------
 if __name__ == "__main__":
     print("=== Index Qdrant - Pipeline Test ===")

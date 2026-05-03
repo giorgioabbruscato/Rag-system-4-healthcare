@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # RAG Healthcare System - Shutdown Script
-# Spegne automaticamente tutti i servizi Docker
+# Automatically stops all Docker services
 
 set -e
 
@@ -11,41 +11,41 @@ echo ""
 
 # Check if services are running
 if ! docker-compose ps | grep -q "Up"; then
-    echo "ℹ️  Nessun servizio attivo"
+    echo "ℹ️  No active services"
     exit 0
 fi
 
-echo "🔍 Servizi attivi:"
+echo "🔍 Active services:"
 docker-compose ps
 echo ""
 
 # Ask for confirmation
-read -p "⚠️  Vuoi spegnere tutti i servizi? [y/N] " -n 1 -r
+read -p "⚠️  Do you want to stop all services? [y/N] " -n 1 -r
 echo ""
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "❌ Annullato"
+    echo "❌ Cancelled"
     exit 0
 fi
 
 echo ""
-echo "🛑 Spegnimento servizi..."
+echo "🛑 Stopping services..."
 echo ""
 
 # Stop containers
 docker-compose stop
 
 echo ""
-echo "🗑️  Rimozione container..."
+echo "🗑️  Removing containers..."
 docker-compose down
 
 echo ""
 echo "============================================"
-echo "✅ Tutti i servizi sono stati spenti"
+echo "✅ All services have been stopped"
 echo "============================================"
 echo ""
-echo "💡 I dati sono stati preservati nei volumi Docker"
+echo "💡 Data has been preserved in Docker volumes"
 echo ""
-echo "   Per riavviare:          ./start-docker.sh"
-echo "   Per pulire tutto:       make docker-clean"
+echo "   To restart:             ./start-docker.sh"
+echo "   To clean everything:    make docker-clean"
 echo ""

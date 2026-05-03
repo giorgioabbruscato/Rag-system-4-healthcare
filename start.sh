@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script di avvio per RAG Healthcare System
+# Startup script for RAG Healthcare System
 
 set -e
 

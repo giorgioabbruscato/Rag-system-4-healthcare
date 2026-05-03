@@ -1,118 +1,117 @@
 # RAG System for Healthcare
 
-Sistema RAG (Retrieval-Augmented Generation) multimodale per supporto decisionale clinico in cardiologia. Combina analisi di immagini ecografiche DICOM, retrieval semantico di casi simili e linee guida per generare risposte diagnostiche assistite da AI.
+Multimodal RAG (Retrieval-Augmented Generation) system for clinical decision support in cardiology. It combines DICOM echocardiography image analysis, semantic retrieval of similar cases and guidelines, and AI-assisted diagnostic responses.
 
-> **📌 Nota API**: Il sistema è attualmente ottimizzato per l'analisi multimodale di casi specifici tramite `/analyze-case`. L'endpoint `/chat` per query generiche è temporaneamente disabilitato e sarà disponibile in future release.
+> **📌 API Note**: The system is currently optimized for multimodal case analysis through `/analyze-case`. The generic `/chat` endpoint is temporarily disabled and will return in future releases.
 
 ## ⚠️ Privacy & Anonymization
 
 **All patient data has been fully anonymized** in compliance with GDPR and HIPAA regulations.
 
 - ✅ All DICOM metadata is anonymized (names, dates, IDs removed)
-- ✅ Only non-identifiable clinical/technical data is preserved
-- ✅ Safe for public repository publication
+- ✅ Only non-identifiable clinical and technical data is preserved
+- ✅ Safe for publication in a public repository
 
 📖 See [ANONYMIZATION.md](ANONYMIZATION.md) for details.
 
-## 🚀 Quick Start (Manuale - Consigliato)
+## 🚀 Quick Start (Manual - Recommended)
 
 ```bash
-# 1. Setup ambiente
+# 1. Activate virtual environment
 source .venv/bin/activate
 
-# 2. Imposta API key OpenAI
+# 2. Set OpenAI API key
 export OPENAI_API_KEY="sk-..."
 
-# 3. Avvia il sistema (auto-build dataset + auto-indexing + Streamlit)
+# 3. Start the system (auto dataset build + auto-indexing + Streamlit)
 make start
 ```
 
-Il sistema avvia **automaticamente**:
-- ✅ Backend FastAPI: http://localhost:8000
-- ✅ Streamlit UI: http://localhost:8501  
-- ✅ Vectorstore con auto-indexing
+The system starts **automatically**:
+- ✅ FastAPI backend: http://localhost:8000
+- ✅ Streamlit UI: http://localhost:8501
+- ✅ Vectorstore with auto-indexing
 
-**Accedi a**:
-- **UI Streamlit**: http://localhost:8501 (🔬 Analyze, 📤 Upload, 📋 Manage)
+**Access**:
+- **Streamlit UI**: http://localhost:8501 (🔬 Analyze, 📤 Upload, 📋 Manage)
 - **API Docs**: http://localhost:8000/docs
 
-📖 Guida completa: [QUICKSTART.md](QUICKSTART.md)
+📖 Full guide: [QUICKSTART.md](QUICKSTART.md)
 
 ## 🐳 Quick Start (Docker)
 
 ```bash
-# Avvia con Docker
+# Start with Docker
 ./start-docker.sh
-# oppure
+# or
 make docker-up
 ```
 
 ```bash
-# Spegni tutto
+# Stop everything
 make docker-down
 ```
 
-📖 **Guida completa API**: vedi [QUICKSTART.md](QUICKSTART.md)
+📖 **Full API guide**: see [QUICKSTART.md](QUICKSTART.md)  
+📖 **Docker guide**: see [DOCKER.md](DOCKER.md)
 
-## Architettura
+## Architecture
 
-### Dataset Base (Auto-generato)
-- **26 casi cardiologici** (file DICOM) → 286 documenti indicizzati
-  - Normal (10), Normal variations (6), Pathological cases (10)
-  - 14 categorie diagnostiche diverse
-- **Frame extraction**: ~10 frame/caso + metadata (view, fps, motion features)
-- **Auto-indexing**: vectorstore Qdrant popolato automaticamente all'avvio
+### Base Dataset (Auto-generated)
+- **26 cardiology cases** (DICOM files) → 286 indexed documents
+  - Normal (10), normal variants (6), pathological cases (10)
+  - 14 different diagnostic categories
+- **Frame extraction**: ~10 frames/case + metadata (view, fps, motion features)
+- **Auto-indexing**: Qdrant vectorstore automatically populated at startup
 
 ### Pipeline
-1. **Build Dataset**: `scripts/build_dataset.py` processa DICOM → `documents.jsonl`
-2. **Vectorstore Manager**: auto-indexing con SentenceTransformer (all-MiniLM-L6-v2)
-3. **RAG Service**: retrieval semantico + prompt augmentation
-4. **FastAPI Backend**: REST API per chat, upload DICOM, gestione documenti
+1. **Build Dataset**: `scripts/build_dataset.py` processes DICOM files → `documents.jsonl`
+2. **Vectorstore Manager**: auto-indexing with SentenceTransformer (`all-MiniLM-L6-v2`)
+3. **RAG Service**: semantic retrieval + prompt augmentation
+4. **FastAPI Backend**: REST API for analysis, DICOM upload, and document management
 
-## Comandi Utili
+## Useful Commands
 
 ```bash
-# Rigenerare dataset (se aggiungi DICOM in data/raw_data/)
+# Rebuild dataset (after adding DICOM files in data/raw_data/)
 ./rebuild_dataset.sh
 
 # Test API endpoint - Analyze case
-curl -X POST http://localhost:8000/analyze-case \
-  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm" \
-  -F "report_text=Optional clinical report"
+curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"   -F "report_text=Optional clinical report"
 
-# Vedere tutti gli endpoint disponibili
-# Visita http://localhost:8000/docs
+# View all available endpoints
+# Visit http://localhost:8000/docs
 ```
 
-## Dettagli Tecnici
+## Technical Details
 
-- **Embeddings**: SentenceTransformer all-MiniLM-L6-v2 (384 dim, locale, no API)
+- **Embeddings**: SentenceTransformer `all-MiniLM-L6-v2` (384 dim, local, no API)
 - **Vectorstore**: Qdrant in-memory (26 cases + 13 guidelines)
-- **LLM**: OpenAI GPT-4o con vision (multimodale)
-- **DICOM**: pydicom + PIL per frame extraction + metadata
+- **LLM**: OpenAI GPT-4o with vision (multimodal)
+- **DICOM**: pydicom + PIL for frame extraction + metadata
 - **Backend**: FastAPI + Pydantic + CORS
 
-## Struttura
+## Structure
 
 ```
 ├── api/main.py                    # FastAPI app
 ├── src/vectorstore_manager.py     # Singleton Qdrant + auto-indexing
 ├── scripts/
 │   ├── build_dataset.py           # DICOM → documents.jsonl
-│   └── multimodal_rag_openai.py   # Pipeline RAG multimodale
+│   └── multimodal_rag_openai.py   # Multimodal RAG pipeline
 ├── data/
-│   ├── raw_data/                  # DICOM originali (26 file, 14 categorie)
-│   ├── dataset_built/             # Auto-generato (documents.jsonl + images/)
-│   └── guidelines_txt/            # Linee guida (13 file .txt)
-├── start.sh                       # Avvio completo
-└── rebuild_dataset.sh             # Rigenera dataset
+│   ├── raw_data/                  # Original DICOM files (26 files, 14 categories)
+│   ├── dataset_built/             # Auto-generated (documents.jsonl + images/)
+│   └── guidelines_txt/            # Guidelines (13 .txt files)
+├── start.sh                       # Full startup
+└── rebuild_dataset.sh             # Rebuild dataset
 ```
 
-## Requisiti
+## Requirements
 
 - Python 3.9+
 - OpenAI API key
-- ~2GB RAM (embeddings + vectorstore in-memory)
+- ~2GB RAM (embeddings + in-memory vectorstore)
 
 ## Privacy Notice
 

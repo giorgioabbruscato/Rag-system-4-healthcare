@@ -14,7 +14,7 @@ from api.main import app
 client = TestClient(app)
 
 
-# DISABILITATO - Endpoint /chat non più in uso
+# DISABLED - /chat endpoint no longer in use
 # class TestChatEndpoint:
 #     """Test /chat endpoint."""
 #     

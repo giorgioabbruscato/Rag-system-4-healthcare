@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script per rigenerare il dataset da zero
+# Script to rebuild the dataset from scratch
 
 set -e
 
@@ -10,7 +10,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}=== Rebuild Dataset ===${NC}\n"
 
-# Controlla se esiste già
+# Check if it already exists
 if [ -f "data/dataset_built/documents.jsonl" ]; then
     echo -e "${YELLOW}Dataset already exists. This will DELETE and REBUILD it.${NC}"
     read -p "Continue? (y/N): " -n 1 -r
@@ -26,7 +26,7 @@ if [ -f "data/dataset_built/documents.jsonl" ]; then
     rm -rf data/dataset_built/images
 fi
 
-# Attiva ambiente
+# Activate environment
 if [ -d ".venv" ]; then
     source .venv/bin/activate
 fi

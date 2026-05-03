@@ -2,104 +2,102 @@
 
 ## Setup
 
-1. **Attiva l'ambiente virtuale**:
+1. **Activate the virtual environment**:
    ```bash
    source .venv/bin/activate
    ```
 
-2. **Imposta la chiave API OpenAI**:
+2. **Set the OpenAI API key**:
    ```bash
    export OPENAI_API_KEY="sk-..."
    ```
 
-3. **Avvia il sistema**:
+3. **Start the system**:
    ```bash
    make start
-   # oppure
+   # or
    ./start.sh
    ```
-   
-   Lo script automaticamente:
-   - Verifica e attiva l'ambiente
-   - Installa dipendenze
-   - **Genera dataset da file DICOM** (se non esiste `documents.jsonl`)
-   - Inizializza e popola il vectorstore (auto-indexing)
-   - **Avvia il backend FastAPI** su http://localhost:8000
-   - **Avvia Streamlit UI** su http://localhost:8501
 
-## UI Streamlit
+   The startup script automatically:
+   - Checks and activates the environment
+   - Installs dependencies
+   - **Builds the dataset from DICOM files** (if `documents.jsonl` does not exist)
+   - Initializes and populates the vectorstore (auto-indexing)
+   - **Starts FastAPI backend** on http://localhost:8000
+   - **Starts Streamlit UI** on http://localhost:8501
 
-Una volta avviato, accedi a **http://localhost:8501**
+## Streamlit UI
 
-### Tab 1: 🔬 Analyze Case (PRINCIPALE)
-Upload un file DICOM + optional clinical report per analisi multimodale completa:
-- Estrae frame dall'ecografia
-- Recupera casi simili tramite RAG semantico
-- Genera risposta clinica assistita da GPT-4o con vision
-- Mostra fonti (case retrieval) e valutazione
+After startup, open **http://localhost:8501**
+
+### Tab 1: 🔬 Analyze Case (PRIMARY)
+Upload a DICOM file plus an optional clinical report for full multimodal analysis:
+- Extracts ultrasound frames
+- Retrieves similar cases through semantic RAG
+- Generates an AI-assisted clinical response with GPT-4o vision
+- Shows sources (case retrieval) and evaluation
 
 ### Tab 2: 📤 Upload DICOM
-Upload e storage di un file DICOM senza analisi immediata.
+Upload and store a DICOM file without running immediate analysis.
 
 ### Tab 3: 📋 Manage Files
-- Lista file caricati nel sistema
-- Elimina file specifici
+- List uploaded files in the system
+- Delete specific files
 
 ### Bottom Actions
-- 🔄 **Reset RAG Collections**: Soft reset (ricrea tutte le collezioni)
-- 🗑️ **Clear Session**: Pulisce lo stato della UI
+- 🔄 **Reset RAG Collections**: Soft reset (recreates all collections)
+- 🗑️ **Clear Session**: Clears UI session state
 
-## Dataset Base
+## Base Dataset
 
-Al primo avvio, lo script esegue automaticamente:
+On first startup, the script automatically runs:
 
 ```bash
 python3 scripts/build_dataset.py
 ```
 
-Questo processa i file DICOM in `data/raw_data/` e genera:
-- **documents.jsonl**: 26 case cards + 260 frame metadata (286 documenti totali)
+This processes DICOM files in `data/raw_data/` and generates:
+- **documents.jsonl**: 26 case cards + 260 frame metadata (286 documents total)
 - **labels.csv**: mapping case_id → diagnosis label
-- **images/**: frame estratti da ogni caso (~10 frame per DICOM)
+- **images/**: extracted frames from each case (~10 frames per DICOM)
 
-**Cartelle raw_data** (14 categorie diagnostiche):
-- Normal (10 casi)
-- Normal variations: septal hypertrophy, mitral valve prolapse, athlete heart, etc. (6 casi)
-- Pathological: dilated cardiomyopathy, global LV dysfunction, inferoapical akinesia, etc. (10 casi)
+**raw_data folders** (14 diagnostic categories):
+- Normal (10 cases)
+- Normal variants: septal hypertrophy, mitral valve prolapse, athlete heart, etc. (6 cases)
+- Pathological: dilated cardiomyopathy, global LV dysfunction, inferoapical akinesia, etc. (10 cases)
 
-### Rigenerare il dataset
+### Rebuild the dataset
 
-Se aggiungi nuovi file DICOM o vuoi rigenerare:
+If you add new DICOM files or want to rebuild:
 
 ```bash
 ./rebuild_dataset.sh
 ```
 
-Questo cancella e ricrea `documents.jsonl` e le immagini.
+This deletes and recreates `documents.jsonl` and the extracted images.
 
-## Struttura
+## Structure
 
-- **Backend API**: FastAPI su porta 8000
-- **Vectorstore**: Qdrant in-memory con auto-indexing
-- **Dataset base**: 26 casi cardiologici (DICOM) processati automaticamente
-- **Collection indicizzate**:
-  - `cases`: 26 case_cards da `data/dataset_built/documents.jsonl` (generato da raw DICOM)
-  - `guidelines`: chunk da 13 file guideline in `data/guidelines_txt/*.txt`
+- **Backend API**: FastAPI on port 8000
+- **Vectorstore**: in-memory Qdrant with auto-indexing
+- **Base dataset**: 26 cardiology DICOM cases processed automatically
+- **Indexed collections**:
+  - `cases`: 26 case cards from `data/dataset_built/documents.jsonl` (generated from raw DICOM)
+  - `guidelines`: chunks from 13 guideline files in `data/guidelines_txt/*.txt`
 
 ## API Endpoints
 
-### POST /analyze-case ✅ [PRINCIPALE]
-Endpoint principale: upload DICOM + optional report per analisi multimodale completa.
+### POST /analyze-case ✅ [PRIMARY]
+Main endpoint: upload DICOM + optional report for complete multimodal analysis.
 
 ```bash
-curl -X POST http://localhost:8000/analyze-case \
-  -F "file=@/path/to/file.dcm" \
-  -F "report_text=Optional clinical findings"
+curl -X POST http://localhost:8000/analyze-case   -F "file=@/path/to/file.dcm"   -F "report_text=Optional clinical findings"
 ```
 
-**Parametri**:
-- `file`: file DICOM (required)
-- `report_text`: clinical report in testo (optional)
+**Parameters**:
+- `file`: DICOM file (required)
+- `report_text`: clinical report text (optional)
 
 **Response**:
 ```json
@@ -123,43 +121,47 @@ curl -X POST http://localhost:8000/analyze-case \
   }
 }
 ```
-## Test rapido
+
+### Other available endpoints
+- `POST /upload-doc`
+- `GET /list-docs`
+- `POST /delete-doc`
+- `POST /flush-rag`
+
+## Quick test
 
 ```bash
-# Test /analyze-case (endpoint principale) da file DICOM locale
-curl -X POST http://localhost:8000/analyze-case \
-  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"
+# Test /analyze-case (main endpoint) with a local DICOM file
+curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"
 
-# Con report opzionale
-curl -X POST http://localhost:8000/analyze-case \
-  -F "file=@data/raw_data/Normal/IM-0001-0032.dcm" \
-  -F "report_text=Normal cardiac function"
+# With optional report
+curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal/IM-0001-0032.dcm"   -F "report_text=Normal cardiac function"
 
-# Test /list-docs per vedere file caricati
+# Test /list-docs to view uploaded files
 curl "http://localhost:8000/list-docs?rag_type=cases"
 
 # Reset RAG collections
 curl -X POST http://localhost:8000/flush-rag
 ```
 
-## Docs interattive
+## Interactive docs
 
-Apri http://localhost:8000/docs per Swagger UI con tutti gli endpoint.
+Open http://localhost:8000/docs for Swagger UI with all endpoints.
 
-## Note
+## Notes
 
-- **documents.jsonl**: se manca, la collection `cases` sarà vuota (solo guidelines saranno indicizzate)
-- **Auto-indexing**: al primo avvio il vectorstore viene popolato automaticamente
-- **In-memory**: i dati sono persi al restart (puoi passare a Qdrant remoto modificando `vectorstore_manager.py`)
+- **documents.jsonl**: if missing, the `cases` collection is empty (only guidelines are indexed)
+- **Auto-indexing**: the vectorstore is populated automatically at startup
+- **In-memory**: data is lost on restart (you can switch to remote Qdrant in `vectorstore_manager.py`)
 
-## Passare a Qdrant remoto
+## Switch to remote Qdrant
 
-1. Avvia Qdrant server:
+1. Start Qdrant server:
    ```bash
    docker run -d -p 6333:6333 qdrant/qdrant
    ```
 
-2. Modifica `src/vectorstore_manager.py`:
+2. Edit `src/vectorstore_manager.py`:
    ```python
    vectorstore = QdrantVectorstore(host="localhost", port=6333)
    ```

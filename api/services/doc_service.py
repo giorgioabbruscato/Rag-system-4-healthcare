@@ -16,12 +16,12 @@ def _ensure_dirs():
     CURRENT_DICOM_DIR.mkdir(parents=True, exist_ok=True)
     CURRENT_FRAMES_DIR.mkdir(parents=True, exist_ok=True)
 
-# Nuova funzione: importa tutti i DICOM da raw_data a current/dicom
+# New function: import all DICOM files from raw_data to current/dicom
 import shutil
 def import_all_rawdata_dicoms():
     """
-    Copia tutti i file .dcm da data/raw_data (ricorsivamente) a data/current/dicom/
-    Salta i file già presenti con lo stesso nome.
+    Copy all .dcm files from data/raw_data (recursively) to data/current/dicom/
+    Skip files that already exist with the same name.
     """
     rawdata_root = Path("data/raw_data")
     _ensure_dirs()
@@ -35,8 +35,8 @@ def import_all_rawdata_dicoms():
 
 async def save_current_dicom_and_extract_frames(file: UploadFile):
     """
-    1) salva il DICOM in data/current/dicom/<id>.dcm
-    2) genera frame in data/current/frames/<id>/frame_*.png usando il tuo script/func
+    1) save the DICOM in data/current/dicom/<id>.dcm
+    2) generate frames in data/current/frames/<id>/frame_*.png using your script/function
     """
     _ensure_dirs()
     file_id = str(uuid.uuid4())
@@ -45,13 +45,13 @@ async def save_current_dicom_and_extract_frames(file: UploadFile):
     content = await file.read()
     dicom_path.write_bytes(content)
 
-    # Estrarre frame dal DICOM appena caricato
+    # Extract frames from the newly uploaded DICOM
     out_dir = CURRENT_FRAMES_DIR / file_id
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
         frames = extract_frames(str(dicom_path), str(out_dir), n_frames=12)
     except Exception as e:
-        # Se l'estrazione fallisce, restituisce comunque i path base
+        # If extraction fails, still return the base paths
         frames = []
         print(f"[doc_service] Frame extraction failed: {e}")
 
