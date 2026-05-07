@@ -3,10 +3,10 @@ import uuid
 from pathlib import Path
 from fastapi import UploadFile
 import sys
-
-# Ensure project root is on path to import scripts
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 from scripts.dicom_to_frames_current import extract_frames
+
+from src.logging_config import get_logger
+logger = get_logger(__name__)
 
 DATA_DIR = Path("data")
 CURRENT_DICOM_DIR = DATA_DIR / "current" / "dicom"
@@ -51,9 +51,9 @@ async def save_current_dicom_and_extract_frames(file: UploadFile):
     try:
         frames = extract_frames(str(dicom_path), str(out_dir), n_frames=12)
     except Exception as e:
+        logger.exception("Frame extraction failed", error=str(e), file_id=file_id)
         # If extraction fails, still return the base paths
         frames = []
-        print(f"[doc_service] Frame extraction failed: {e}")
 
     return {
         "file_id": file_id,

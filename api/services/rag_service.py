@@ -1,18 +1,17 @@
 import os
 import sys
 from typing import Dict, Any, Optional, List
-
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-
 from scripts.index_Qdrant import get_vectorstore, get_embedder
+
+from src.logging_config import get_logger
+logger = get_logger(__name__)
 
 # Import multimodal pipeline
 try:
     from scripts.multimodal_rag_openai import run_multimodal_rag
 except Exception as e:
     run_multimodal_rag = None
-    print(f"[rag_service] WARNING: multimodal pipeline unavailable: {e}")
+    logger.warning("Multimodal pipeline unavailable", error=str(e))
 
 
 def answer_question(
@@ -58,7 +57,7 @@ def answer_question(
                 })
                 retrieved_context += f"\n[CASE {hit.id}]\n{hit.text}\n"
         except Exception as e:
-            print(f"[rag_service] Error retrieving cases: {e}")
+            logger.exception("Error retrieving cases", error=str(e))
     
     if rag_type in ["guidelines", "hybrid", "multimodal"]:
         try:
@@ -78,7 +77,7 @@ def answer_question(
                 })
                 retrieved_context += f"\n[GUIDELINE {hit.metadata.get('source', '?')}]\n{hit.text}\n"
         except Exception as e:
-            print(f"[rag_service] Error retrieving guidelines: {e}")
+            logger.exception("Error retrieving guidelines", error=str(e))
     
     # Build answer (you can integrate OpenAI or another LLM here)
     # Simple stub for now
@@ -124,6 +123,7 @@ def analyze_current_case(
     try:
         output_text = run_multimodal_rag(report_text=text, query_frames_folder=frames_dir)
     except Exception as e:
+        logger.exception("Multimodal RAG failed", error=str(e))
         return {"ok": False, "error": f"Multimodal RAG failed: {e}"}
 
     return {

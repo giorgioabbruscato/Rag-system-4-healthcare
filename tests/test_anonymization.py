@@ -7,8 +7,6 @@ import os
 import sys
 import json
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JSONL_PATH = os.path.join(BASE_DIR, "data", "dataset_built", "documents.jsonl")
 

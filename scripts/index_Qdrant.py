@@ -11,15 +11,13 @@ from datapizza.vectorstores.qdrant import QdrantVectorstore
 from datapizza.type.type import Chunk, DenseEmbedding
 from sentence_transformers import SentenceTransformer
 
-# --- PATHS ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "data")
-DATASET_DIR = os.path.join(DATA_DIR, "dataset_built")
-GUIDELINES_DIR = os.path.join(DATA_DIR, "guidelines_txt")
-JSONL_PATH = os.path.join(DATASET_DIR, "documents.jsonl")
+from src.config import settings
+from src.logging_config import get_logger
+logger = get_logger(__name__)
 
-EMB_MODEL = "all-MiniLM-L6-v2"
-EMBEDDING_DIM = 384
+# --- PATHS ---
+JSONL_PATH = os.path.join(settings.dataset_dir, "documents.jsonl")
+GUIDELINES_DIR = settings.guidelines_dir
 
 # -----------------------------
 # Singleton Vectorstore
@@ -45,7 +43,7 @@ def get_vectorstore() -> QdrantVectorstore:
     if _vectorstore is None:
         print("[IndexQdrant] Initializing Qdrant in-memory...")
         _vectorstore = QdrantVectorstore(location=":memory:")
-        _embedder = SentenceTransformer(EMB_MODEL)
+        _embedder = SentenceTransformer(settings.embedding_model)
     
     if not _initialized:
         print("[IndexQdrant] Auto-indexing collections...")
@@ -59,7 +57,7 @@ def get_embedder() -> SentenceTransformer:
     """Return the singleton sentence transformer."""
     global _embedder
     if _embedder is None:
-        _embedder = SentenceTransformer(EMB_MODEL)
+        _embedder = SentenceTransformer(settings.embedding_model)
     return _embedder
 
 
@@ -72,7 +70,7 @@ def _ensure_collections_populated():
         collections = _vectorstore.get_collections()
         collection_names = [c[0] if isinstance(c, tuple) else c for c in collections]
         if "cases" in collection_names:
-            print("[IndexQdrant] Collection 'cases' exists, checking if populated...")
+            logger.info("[IndexQdrant] Collection 'cases' exists, checking if populated...")
             try:
                 test = _vectorstore.search(
                     collection_name="cases",
@@ -81,12 +79,12 @@ def _ensure_collections_populated():
                     k=1
                 )
                 if test:
-                    print(f"[IndexQdrant] Collection 'cases' already has data.")
+                    logger.info("[IndexQdrant] Collection 'cases' already has data.")
                     return
-            except:
-                pass
-    except:
-        pass
+            except Exception as e:
+                logger.warning("Failed to check if 'cases' is populated", error=str(e))
+    except Exception as e:
+        logger.warning("Failed to get collections", error=str(e))
     
     print("[IndexQdrant] Creating and indexing collections...")
     _create_and_index_all()
@@ -97,12 +95,12 @@ def _create_and_index_all():
     global _vectorstore, _embedder
     
     # Create 'cases' collection
-    vector_config = [VectorConfig(name="text_embedding", dimensions=EMBEDDING_DIM)]
+    vector_config = [VectorConfig(name=settings.vector_name, dimensions=settings.embedding_dim)]
     
     try:
         _vectorstore.delete_collection("cases")
-    except:
-        pass
+    except Exception as e:
+        logger.warning("Collection 'cases' could not be deleted or does not exist", error=str(e))
     
     _vectorstore.create_collection("cases", vector_config=vector_config)
     
@@ -112,8 +110,8 @@ def _create_and_index_all():
     # Create 'guidelines' collection
     try:
         _vectorstore.delete_collection("guidelines")
-    except:
-        pass
+    except Exception as e:
+        logger.warning("Collection 'guidelines' could not be deleted or does not exist", error=str(e))
     
     _vectorstore.create_collection("guidelines", vector_config=vector_config)
     _index_guidelines()
@@ -159,7 +157,7 @@ def _index_cases():
     for i in range(len(docs_text)):
         case_id = docs_metadata[i].get("case_id", f"unknown_{i}")
         doc_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"case_{case_id}_{i}"))
-        emb = DenseEmbedding(name="text_embedding", vector=embeddings[i])
+        emb = DenseEmbedding(name=settings.vector_name, vector=embeddings[i])
         
         metadata = docs_metadata[i].copy()
         metadata["original_id"] = case_id
@@ -195,7 +193,7 @@ def _index_guidelines():
     
     print(f"[IndexQdrant] Loading guidelines from {GUIDELINES_DIR}...")
     
-    def chunk_text(text: str, chunk_size: int = 800, overlap: int = 150):
+    def chunk_text(text: str, chunk_size: int = settings.chunk_size, overlap: int = settings.chunk_overlap):
         chunks = []
         start = 0
         while start < len(text):
@@ -242,7 +240,7 @@ def _index_guidelines():
     chunks = []
     for i in range(len(docs_text)):
         doc_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"guideline_{i}"))
-        emb = DenseEmbedding(name="text_embedding", vector=embeddings[i])
+        emb = DenseEmbedding(name=settings.vector_name, vector=embeddings[i])
         chunks.append(
             Chunk(
                 id=doc_uuid,
@@ -263,17 +261,17 @@ def reset_collections():
     if _vectorstore is None:
         return
     
-    print("[IndexQdrant] Resetting all collections...")
+    logger.info("[IndexQdrant] Resetting all collections...")
     
     try:
         _vectorstore.delete_collection("cases")
-    except:
-        pass
+    except Exception as e:
+        logger.warning("Failed to delete 'cases' during reset", error=str(e))
     
     try:
         _vectorstore.delete_collection("guidelines")
-    except:
-        pass
+    except Exception as e:
+        logger.warning("Failed to delete 'guidelines' during reset", error=str(e))
     
     _initialized = False
     _ensure_collections_populated()
@@ -300,7 +298,7 @@ if __name__ == "__main__":
     results = vs.search(
         collection_name="cases",
         query_vector=test_emb,
-        vector_name="text_embedding",
+        vector_name=settings.vector_name,
         k=3
     )
     

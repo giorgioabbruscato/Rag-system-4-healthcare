@@ -8,9 +8,6 @@ import sys
 import tempfile
 import json
 
-# Add scripts to path
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__))))
-
 from scripts.index_Qdrant import (
     get_vectorstore,
     get_embedder,
@@ -149,8 +146,8 @@ class TestErrorHandling:
             )
             # Should not crash
             assert isinstance(results, list)
-        except Exception:
-            pytest.skip("Zero vector search not supported")
+        except Exception as e:
+            pytest.skip(f"Zero vector search not supported or failed: {e}")
 
 
 if __name__ == "__main__":

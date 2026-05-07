@@ -53,7 +53,7 @@ class TestAnonymization:
         for tag in SENSITIVE_TAGS:
             try:
                 setattr(ds, tag, f"sensitive_value_{tag}")
-            except:
+            except Exception:
                 pass  # Some tags may not be settable
         
         ds_anon = anonymize_dicom_metadata(ds)

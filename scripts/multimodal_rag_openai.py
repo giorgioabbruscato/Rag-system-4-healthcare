@@ -6,30 +6,27 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Add src to path to import vectorstore_manager
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-
 from scripts.index_Qdrant import get_vectorstore, get_embedder
+
+from src.config import settings
+from src.logging_config import get_logger
+logger = get_logger(__name__)
 
 # ----------------------------------
 # Config
 # ----------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "dataset_built"))
-
 # Use the vectorstore manager (auto-indexing on first use)
 vectorstore = get_vectorstore()
 embedder = get_embedder()
 
-TOPK_CASES = 5
-TOPK_GUIDES = 4
+TOPK_CASES = settings.topk_cases
+TOPK_GUIDES = settings.topk_guidelines
 
-FRAMES_PER_SIMILAR_CASE = 3
-MAX_QUERY_FRAMES = 12
-MAX_SIMILAR_FRAMES_TOTAL = 12
+FRAMES_PER_SIMILAR_CASE = settings.frames_per_case
+MAX_QUERY_FRAMES = settings.max_query_frames
+MAX_SIMILAR_FRAMES_TOTAL = settings.max_similar_frames_total
 
-MODEL_VISION = "gpt-4o"
+MODEL_VISION = settings.openai_model
 # OpenAI client from the official SDK
 from openai import OpenAI
 
@@ -96,7 +93,7 @@ def retrieve_similar_qdrant(
             k=k
         )
     except Exception as e:
-        print(f"[WARNING] Search failed for collection '{collection_name}': {e}")
+        logger.warning(f"Search failed for collection '{collection_name}'", error=str(e))
         hits = []
     
     # handle empty results

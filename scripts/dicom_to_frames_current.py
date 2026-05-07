@@ -5,6 +5,8 @@ import pydicom
 from pydicom.pixel_data_handlers.util import convert_color_space
 from PIL import Image
 
+from src.logging_config import get_logger
+logger = get_logger(__name__)
 
 def ensure_dir(path: str):
     os.makedirs(path, exist_ok=True)
@@ -28,7 +30,8 @@ def to_rgb_if_needed(ds, frame):
     if photometric == "YBR_FULL_422" and frame.ndim == 3 and frame.shape[-1] == 3:
         try:
             return convert_color_space(frame, "YBR_FULL_422", "RGB")
-        except Exception:
+        except Exception as e:
+            logger.warning("Color conversion failed, returning original frame", error=str(e))
             return frame
     return frame
 

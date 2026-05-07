@@ -32,3 +32,23 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
 ]
+  [build-system]
+  requires = ["setuptools>=68.0", "wheel"]
+  build-backend = "setuptools.backends._legacy:_Backend"
+
+  [project]
+  name = "rag-healthcare"
+  version = "0.1.0"
+  description = "Multimodal RAG system for clinical decision support in cardiology"
+  requires-python = ">=3.10"
+  dependencies = [
+      # copiare da requirements.txt
+  ]
+
+  [project.optional-dependencies]
+  dev = [
+      # copiare da requirements-dev.txt
+  ]
+
+  [tool.setuptools.packages.find]
+  include = ["src*", "api*", "scripts*"]

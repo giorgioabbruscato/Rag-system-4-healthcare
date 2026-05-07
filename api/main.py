@@ -12,6 +12,8 @@ from api.services.rag_service import answer_question, analyze_current_case
 
 from scripts.index_Qdrant import reset_collections
 
+from src.logging_config import get_logger
+logger = get_logger(__name__)
 
 app = FastAPI()
 app.add_middleware(
@@ -124,4 +126,5 @@ def flush_rag():
         reset_collections()
         return {"ok": True, "message": "RAG collections reset."}
     except Exception as e:
+        logger.exception("Failed to reset RAG collections", error=str(e))
         return {"ok": False, "error": str(e)}, 500

@@ -3,6 +3,9 @@ import requests
 import streamlit as st
 from dotenv import load_dotenv
 
+from src.logging_config import get_logger
+logger = get_logger(__name__)
+
 load_dotenv()
 backend_host = os.getenv("BACKEND_HOST", "localhost")
 BASE_URL = f"http://{backend_host}:8000"
@@ -71,7 +74,8 @@ with tab1:
                 else:
                     st.error(f"❌ Error: {r.text}")
             except Exception as e:
-                st.error(f"❌ Exception: {str(e)}")
+                logger.exception("Streamlit: analysis request failed", error=str(e))
+                st.error("❌ Exception: an internal error occurred; check logs")
 
 with tab2:
     st.header("Upload DICOM Only")
@@ -89,7 +93,8 @@ with tab2:
                 else:
                     st.error(f"❌ Error: {r.text}")
             except Exception as e:
-                st.error(f"❌ Exception: {str(e)}")
+                logger.exception("Streamlit: upload request failed", error=str(e))
+                st.error("❌ Exception: an internal error occurred; check logs")
 
 with tab3:
     st.header("Manage Current Files")
@@ -110,7 +115,8 @@ with tab3:
                 else:
                     st.error(f"Error: {r.text}")
             except Exception as e:
-                st.error(f"Exception: {str(e)}")
+                logger.exception("Streamlit: refresh files failed", error=str(e))
+                st.error("Exception: an internal error occurred; check logs")
     
     with col_delete:
         st.subheader("🗑️ Delete File")
@@ -124,7 +130,8 @@ with tab3:
                 else:
                     st.error(f"Error: {r.text}")
             except Exception as e:
-                st.error(f"Exception: {str(e)}")
+                logger.exception("Streamlit: delete file request failed", error=str(e))
+                st.error("Exception: an internal error occurred; check logs")
 
 st.divider()
 
@@ -141,7 +148,8 @@ with col1:
                 else:
                     st.error(f"Error: {rr.text}")
             except Exception as e:
-                st.error(f"Exception: {str(e)}")
+                logger.exception("Streamlit: reset collections failed", error=str(e))
+                st.error("Exception: an internal error occurred; check logs")
 
 with col2:
     if st.button("🗑️ Clear Session"):
