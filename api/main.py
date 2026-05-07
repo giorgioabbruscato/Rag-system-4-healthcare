@@ -1,9 +1,21 @@
+import uuid
+from starlette.middleware.base import BaseHTTPMiddleware
+import structlog
+
+class CorrelationIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        correlation_id = request.headers.get("X-Correlation-ID", str(uuid.uuid4()))
+        structlog.contextvars.bind_contextvars(correlation_id=correlation_id)
+        response = await call_next(request)
+        response.headers["X-Correlation-ID"] = correlation_id
+        return response
+
 from fastapi import FastAPI, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, Any, Dict, List
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-
+from src.config import settings
 # Load environment variables from .env file
 load_dotenv()
 
@@ -16,13 +28,14 @@ from src.logging_config import get_logger
 logger = get_logger(__name__)
 
 app = FastAPI()
+app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+      CORSMiddleware,
+      allow_origins=settings.allowed_origins,
+      allow_credentials=True,
+      allow_methods=["GET", "POST", "DELETE"],
+      allow_headers=["*"],
+  )
 
 class ChatRequest(BaseModel):
     question: str

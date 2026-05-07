@@ -7,6 +7,12 @@ import numpy as np
 import pydicom
 from pydicom.pixel_data_handlers.util import convert_color_space
 from PIL import Image
+
+from src.logging_config import get_logger, setup_logging
+
+setup_logging()
+logger = get_logger(__name__)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 RAW_ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "raw_data"))
@@ -19,9 +25,9 @@ IMAGES_DIR = os.path.join(OUT_DIR, "images")
 os.makedirs(OUT_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
-print("RAW_ROOT:", RAW_ROOT)
-print("OUT_DIR:", OUT_DIR)
-print("\n[ANONYMIZATION] Removing sensitive patient data from DICOM metadata...\n")
+logger.info(f"RAW_ROOT: {RAW_ROOT}")
+logger.info(f"OUT_DIR: {OUT_DIR}")
+logger.info("[ANONYMIZATION] Removing sensitive patient data from DICOM metadata...")
 
 # --- SENSITIVE DATA TO EXCLUDE (GDPR/HIPAA compliance) ---
 # These DICOM tags contain patient-identifiable information
@@ -273,7 +279,7 @@ with open(LABELS_CSV, "w", newline="", encoding="utf-8") as cf:
     w.writeheader()
     w.writerows(labels_rows)
 
-print("Build complete!")
-print("JSONL:", JSONL_PATH)
-print("Labels:", LABELS_CSV)
-print("Images dir:", IMAGES_DIR)
+logger.info("Build complete!")
+logger.info(f"JSONL: {JSONL_PATH}")
+logger.info(f"Labels: {LABELS_CSV}")
+logger.info(f"Images dir: {IMAGES_DIR}")

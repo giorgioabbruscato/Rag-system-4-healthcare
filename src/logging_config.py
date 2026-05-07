@@ -2,7 +2,9 @@ import structlog
 import logging
 import sys
 
-def setup_logging(level: str = "INFO"):
+from src.config import settings
+
+def setup_logging(level: str = settings.log_level):
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,

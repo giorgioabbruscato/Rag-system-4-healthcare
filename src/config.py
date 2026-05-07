@@ -4,6 +4,7 @@ from typing import List
 
 class Settings(BaseSettings):
       # API
+      log_level: str = "INFO"
       api_host: str = "0.0.0.0"
       api_port: int = Field(8000, ge=1024, le=65535)
       allowed_origins: List[str] = ["http://localhost:8501"]

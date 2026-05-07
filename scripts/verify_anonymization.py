@@ -7,6 +7,11 @@ import json
 import sys
 import os
 
+from src.logging_config import get_logger, setup_logging
+
+setup_logging()
+logger = get_logger(__name__)
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JSONL_PATH = os.path.join(BASE_DIR, "data", "dataset_built", "documents.jsonl")
 
@@ -54,11 +59,11 @@ def check_metadata(meta, doc_id):
     return issues
 
 def main():
-    print("=== Anonymization Verification ===\n")
+    logger.info("=== Anonymization Verification ===")
     
     if not os.path.exists(JSONL_PATH):
-        print(f"❌ Dataset not found: {JSONL_PATH}")
-        print("Run: python3 scripts/build_dataset.py")
+        logger.error(f"Dataset not found: {JSONL_PATH}")
+        logger.info("Run: python3 scripts/build_dataset.py")
         return 1
     
     total_docs = 0
@@ -74,22 +79,21 @@ def main():
             
             if issues:
                 issues_found += 1
-                print(f"⚠️  Document {line_num} ({meta.get('case_id', '?')}):")
+                logger.warning(f"Document {line_num} ({meta.get('case_id', '?')}):")
                 for issue in issues:
-                    print(f"   - {issue}")
-                print()
+                    logger.warning(f"   - {issue}")
     
-    print(f"\n{'='*50}")
-    print(f"Total documents checked: {total_docs}")
-    print(f"Documents with issues: {issues_found}")
+    logger.info(f"{'='*50}")
+    logger.info(f"Total documents checked: {total_docs}")
+    logger.info(f"Documents with issues: {issues_found}")
     
     if issues_found == 0:
-        print("\n✅ All documents are properly anonymized!")
-        print("   Safe for public repository.")
+        logger.info("✅ All documents are properly anonymized!")
+        logger.info("   Safe for public repository.")
         return 0
     else:
-        print(f"\n⚠️  Found potential issues in {issues_found} documents.")
-        print("   Review and re-run build_dataset.py if needed.")
+        logger.warning(f"Found potential issues in {issues_found} documents.")
+        logger.warning("   Review and re-run build_dataset.py if needed.")
         return 1
 
 if __name__ == '__main__':

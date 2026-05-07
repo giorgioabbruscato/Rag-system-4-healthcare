@@ -4,6 +4,11 @@ from sentence_transformers import SentenceTransformer
 from datapizza.core.vectorstore import VectorConfig
 from datapizza.vectorstores.qdrant import QdrantVectorstore
 
+from src.logging_config import get_logger, setup_logging
+
+setup_logging()
+logger = get_logger(__name__)
+
 # -----------------------------
 # Paths
 # -----------------------------
@@ -98,16 +103,22 @@ for path in glob.glob(os.path.join(GUIDELINES_DIR, "*.txt")):
         idx += 1
 
 # --- GENERATE EMBEDDINGS (local) ---
+logger.info(f"Generating embeddings for {len(documents)} chunks...")
 embeddings = local_embedder.embed(documents)
 
-# --- insert in Qdrant ---
+# --- ADD TO QDRANT ---
+logger.info("Adding documents to Qdrant...")
 vectorstore.add(
     collection_name="guidelines",
+    documents=documents,
+    embeddings=embeddings,
+    metadatas=metadatas,
     ids=ids,
-    vectors=embeddings,
-    metadatas=metadatas
+    embedding_name="text_embeddings"
 )
 
-print("Guidelines indexed successfully!")
-print("Files:", len(set(m["source"] for m in metadatas)))
-print("Chunks:", len(ids))
+logger.info("Done.")
+
+logger.info("Guidelines indexed successfully!")
+logger.info("Files:", len(set(m["source"] for m in metadatas)))
+logger.info("Chunks:", len(ids))

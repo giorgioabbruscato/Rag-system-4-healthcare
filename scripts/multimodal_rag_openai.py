@@ -318,12 +318,12 @@ def run_multimodal_rag(
     # 1) Retrieve similar cases
     cases_res = retrieve_similar_qdrant("cases", report_text, TOPK_CASES)
     if not cases_res["ids"][0]:
-        print("[WARNING] No similar cases found. Check if 'cases' collection is populated.")
+        logger.warning("No similar cases found. Check if 'cases' collection is populated.")
 
     # 2) Retrieve guidelines (optional)
     guides_res = retrieve_similar_qdrant("guidelines", report_text, TOPK_GUIDES)
     if not guides_res["ids"][0]:
-        print("[INFO] No guidelines found. Continuing without guideline context.")
+        logger.info("No guidelines found. Continuing without guideline context.")
         guides_res = None
 
     # 3) kNN vote with adaptive threshold
@@ -342,7 +342,7 @@ def run_multimodal_rag(
     # treat as insufficient evidence to avoid over-diagnosis
     top_score = knn_candidates[0][1] if knn_candidates and knn_candidates[0][0] != "insufficient_evidence" else 0.0
     if is_generic and top_score < 5.0 and top_score > 0:
-        print(f"[INFO] Generic report with marginal KNN score ({top_score:.2f}). Treating as insufficient evidence.")
+        logger.info(f"Generic report with marginal KNN score ({top_score:.2f}). Treating as insufficient evidence.")
         knn_candidates = [("insufficient_evidence", top_score)] + knn_candidates[:2]
     
     # If kNN returns "insufficient_evidence" or very low scores, check for "normal" in report
@@ -356,7 +356,7 @@ def run_multimodal_rag(
             score = 4.0 if has_explicit_normal else 2.0
             knn_candidates = [("normal_echo", score)] + knn_candidates[:2]
             if has_explicit_normal:
-                print(f"[INFO] Report has explicit normal findings. Score boosted to {score:.1f} for 'normal_echo' candidate.")
+                logger.info(f"Report has explicit normal findings. Score boosted to {score:.1f} for 'normal_echo' candidate.")
 
     # 4) Frames
     if query_frame_paths is None:
@@ -396,7 +396,7 @@ def run_multimodal_rag(
 # CLI
 # ----------------------------------
 if __name__ == "__main__":
-    print("Paste the clinical report (finish with an empty line):")
+    logger.info("Paste the clinical report (finish with an empty line):")
     lines = []
     while True:
         line = input()
@@ -411,5 +411,5 @@ if __name__ == "__main__":
     frames_folder = frames_folder if frames_folder else None
 
     output = run_multimodal_rag(report_text=report, query_frames_folder=frames_folder)
-    print("\n--- MODEL OUTPUT ---\n")
-    print(output)
+    logger.info("\n--- MODEL OUTPUT ---\n")
+    logger.info(output)

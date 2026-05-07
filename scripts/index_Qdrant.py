@@ -12,7 +12,9 @@ from datapizza.type.type import Chunk, DenseEmbedding
 from sentence_transformers import SentenceTransformer
 
 from src.config import settings
-from src.logging_config import get_logger
+from src.logging_config import get_logger, setup_logging
+
+setup_logging()
 logger = get_logger(__name__)
 
 # --- PATHS ---
@@ -41,12 +43,12 @@ def get_vectorstore() -> QdrantVectorstore:
     global _vectorstore, _embedder, _initialized
     
     if _vectorstore is None:
-        print("[IndexQdrant] Initializing Qdrant in-memory...")
+        logger.info("Initializing Qdrant in-memory...")
         _vectorstore = QdrantVectorstore(location=":memory:")
         _embedder = SentenceTransformer(settings.embedding_model)
     
     if not _initialized:
-        print("[IndexQdrant] Auto-indexing collections...")
+        logger.info("Auto-indexing collections...")
         _ensure_collections_populated()
         _initialized = True
     
@@ -86,7 +88,7 @@ def _ensure_collections_populated():
     except Exception as e:
         logger.warning("Failed to get collections", error=str(e))
     
-    print("[IndexQdrant] Creating and indexing collections...")
+    logger.info("Creating and indexing collections...")
     _create_and_index_all()
 
 
@@ -122,10 +124,10 @@ def _index_cases():
     global _vectorstore, _embedder
     
     if not os.path.exists(JSONL_PATH):
-        print(f"[IndexQdrant] WARNING: {JSONL_PATH} not found. Skipping cases indexing.")
+        logger.warning(f"{JSONL_PATH} not found. Skipping cases indexing.")
         return
     
-    print(f"[IndexQdrant] Loading documents from {JSONL_PATH}...")
+    logger.info(f"Loading documents from {JSONL_PATH}...")
     
     # Load all documents (case_card + frame)
     docs_text = []
@@ -142,17 +144,17 @@ def _index_cases():
             docs_metadata.append(obj["metadata"])
     
     if not docs_text:
-        print("[IndexQdrant] No documents found.")
+        logger.warning("No documents found.")
         return
     
-    print(f"[IndexQdrant] Embedding {len(docs_text)} documents...")
+    logger.info(f"Embedding {len(docs_text)} documents...")
     
     # Generate embeddings using LocalEmbedder
     local_embedder = LocalEmbedder(_embedder)
     embeddings = local_embedder.embed(docs_text)
     
     # Add to Qdrant
-    print(f"[IndexQdrant] Adding documents to Qdrant...")
+    logger.info(f"Adding documents to Qdrant...")
     chunks = []
     for i in range(len(docs_text)):
         case_id = docs_metadata[i].get("case_id", f"unknown_{i}")
@@ -180,7 +182,7 @@ def _index_cases():
         doc_types[dt] = doc_types.get(dt, 0) + 1
     
     types_str = ", ".join([f"{v} {k}s" for k, v in doc_types.items()])
-    print(f"[IndexQdrant] ✓ Indexed {len(docs_text)} documents ({types_str}).")
+    logger.info(f"✓ Indexed {len(docs_text)} documents ({types_str}).")
 
 
 def _index_guidelines():
@@ -188,10 +190,10 @@ def _index_guidelines():
     global _vectorstore, _embedder
     
     if not os.path.isdir(GUIDELINES_DIR):
-        print(f"[IndexQdrant] WARNING: {GUIDELINES_DIR} not found. Skipping guidelines indexing.")
+        logger.warning(f"{GUIDELINES_DIR} not found. Skipping guidelines indexing.")
         return
     
-    print(f"[IndexQdrant] Loading guidelines from {GUIDELINES_DIR}...")
+    logger.info(f"Loading guidelines from {GUIDELINES_DIR}...")
     
     def chunk_text(text: str, chunk_size: int = settings.chunk_size, overlap: int = settings.chunk_overlap):
         chunks = []

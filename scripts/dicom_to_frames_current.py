@@ -5,7 +5,9 @@ import pydicom
 from pydicom.pixel_data_handlers.util import convert_color_space
 from PIL import Image
 
-from src.logging_config import get_logger
+from src.logging_config import get_logger, setup_logging
+
+setup_logging()
 logger = get_logger(__name__)
 
 def ensure_dir(path: str):
@@ -77,10 +79,10 @@ def extract_frames(dicom_path: str, out_dir: str, n_frames: int = 12):
     view = getattr(ds, "ViewName", None)
     stage = getattr(ds, "StageName", None)
     fps = getattr(ds, "CineRate", getattr(ds, "RecommendedDisplayFrameRate", None))
-    print("DICOM:", dicom_path)
-    print("Frames in DICOM:", num_frames, "| Saved:", len(saved_paths))
-    print("View:", view, "| Stage:", stage, "| FPS:", fps)
-    print("Output folder:", out_dir)
+    logger.info(f"DICOM: {dicom_path}")
+    logger.info(f"Frames in DICOM: {num_frames} | Saved: {len(saved_paths)}")
+    logger.info(f"View: {view} | Stage: {stage} | FPS: {fps}")
+    logger.info(f"Output folder: {out_dir}")
 
     return saved_paths
 
