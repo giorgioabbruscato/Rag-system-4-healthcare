@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # API
     log_level: str = "INFO"
-    api_host: str = "0.0.0.0"
+    api_host: str = "127.0.0.1"
     api_port: int = Field(8000, ge=1024, le=65535)
     allowed_origins: List[str] = ["http://localhost:8501"]
     analyze_case_rate_limit: str = "10/minute"

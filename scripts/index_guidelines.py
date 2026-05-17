@@ -53,8 +53,8 @@ vector_config = [
 # create the "guidelines" collection (if it already exists, recreate it)
 try:
     vectorstore.delete_collection("guidelines")
-except Exception:
-    pass
+except Exception as exc:
+    logger.debug("Guidelines collection not present or delete failed: %s", exc)
 
 vectorstore.create_collection(collection_name="guidelines", vector_config=vector_config)
 
