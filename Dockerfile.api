@@ -3,9 +3,9 @@ FROM python:3.11-slim AS builder
 
 WORKDIR /build
 
-# Install build dependencies and bring base up to date (glibc patches)
+# Install build dependencies
+# hadolint ignore=DL3008
 RUN apt-get update \
-    && apt-get dist-upgrade -y \
     && apt-get install -y --no-install-recommends \
         gcc \
         g++ \
@@ -15,18 +15,13 @@ RUN apt-get update \
 COPY requirements.txt .
 
 # Upgrade pip/setuptools (pulls patched jaraco.context) and install dependencies
-RUN pip install --upgrade pip setuptools && \
-    pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
+RUN pip install --no-cache-dir pip==24.3.1 setuptools==75.8.2 \
+    && pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
 
 # Final stage
 FROM python:3.11-slim
 
 WORKDIR /app
-
-# Pull security updates (e.g., glibc) in the final image
-RUN apt-get update \
-    && apt-get dist-upgrade -y \
-    && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for runtime
 RUN adduser --disabled-password --gecos '' appuser
@@ -36,9 +31,6 @@ COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 # Make sure scripts in .local are usable
 ENV PATH=/home/appuser/.local/bin:$PATH
-
-# Ensure base tools (pip/setuptools) are patched in runtime image
-RUN pip install --no-cache-dir --upgrade pip setuptools
 
 # Copy application code
 COPY api/ ./api/
