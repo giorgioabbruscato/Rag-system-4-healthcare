@@ -23,6 +23,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Apply Debian security updates (libcap2, systemd/udev, etc.)
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 # Non-root user for runtime
 RUN adduser --disabled-password --gecos '' appuser
 
