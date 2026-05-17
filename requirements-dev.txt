@@ -16,3 +16,6 @@ mypy>=1.5.0
 bandit>=1.7.5
 pip-audit>=2.6.0
 safety>=2.3.0
+
+# Data versioning
+dvc>=3.0.0

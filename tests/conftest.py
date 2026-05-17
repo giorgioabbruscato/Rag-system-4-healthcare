@@ -1,9 +1,11 @@
 """
 Pytest configuration and fixtures.
 """
-import pytest
-import sys
+import json
 import os
+import pytest
+from pathlib import Path
+
 
 @pytest.fixture(scope="session")
 def project_root():
@@ -21,6 +23,12 @@ def data_dir(project_root):
 def dataset_dir(data_dir):
     """Return dataset_built directory path."""
     return os.path.join(data_dir, "dataset_built")
+
+
+@pytest.fixture(scope="session")
+def evaluation_dir(data_dir):
+    """Return evaluation directory path."""
+    return os.path.join(data_dir, "evaluation")
 
 
 @pytest.fixture
@@ -53,6 +61,49 @@ def mock_dicom_metadata():
     }
 
 
+@pytest.fixture
+def eval_queries():
+    """Load evaluation queries from JSON for testing."""
+    queries_path = Path(__file__).parent.parent / "data" / "evaluation" / "eval_queries.json"
+    if not queries_path.exists():
+        return []
+    with open(queries_path) as f:
+        return json.load(f)
+
+
+@pytest.fixture
+def sample_eval_query():
+    """Return a single sample evaluation query for unit testing."""
+    return {
+        "query": "Normal echocardiogram findings",
+        "expected_diagnosis_groups": ["normal"],
+        "relevant_case_ids": ["case_001", "case_002"],
+        "expected_keywords": ["normal", "preserved"]
+    }
+
+
+@pytest.fixture
+def mock_vectorstore_hits():
+    """Return mock vectorstore search hits for testing metric functions."""
+    return [
+        {
+            "metadata": {"case_id": "case_001", "document_type": "case_card"}
+        },
+        {
+            "metadata": {"case_id": "case_001", "document_type": "frame"}
+        },
+        {
+            "metadata": {"case_id": "case_002", "document_type": "case_card"}
+        },
+        {
+            "metadata": {"case_id": "case_003", "document_type": "case_card"}
+        },
+        {
+            "metadata": {"case_id": "case_004", "document_type": "case_card"}
+        },
+    ]
+
+
 # Configure pytest
 def pytest_configure(config):
     """Configure pytest with custom markers."""
@@ -64,4 +115,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers", "privacy: marks tests related to data privacy/anonymization"
+    )
+    config.addinivalue_line(
+        "markers", "evaluation: marks tests related to RAG evaluation"
     )

@@ -51,6 +51,12 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# MLflow
+mlruns/
+
+# DVC evaluation artifacts
+data/evaluations/*.json
+
 # Translations
 *.mo
 *.pot

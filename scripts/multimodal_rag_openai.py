@@ -71,7 +71,7 @@ def list_frames_in_folder(folder: Optional[str]) -> List[str]:
     )
 
 def pick_frames_for_case(case_id: str, n: int) -> List[str]:
-    case_dir = os.path.join(DATA_DIR, "images", case_id)
+    case_dir = os.path.join(settings.dataset_dir, "images", case_id)
     frames = list_frames_in_folder(case_dir)
     return uniform_sample(frames, n)
 

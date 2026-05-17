@@ -1,0 +1,31 @@
+stages:
+  build-dataset:
+    cmd: python scripts/build_dataset.py
+    deps:
+      - scripts/build_dataset.py
+      - data/raw_data
+    outs:
+      - data/dataset_built/documents.jsonl
+      - data/dataset_built/labels.csv
+      - data/dataset_built/images
+
+  index:
+    cmd: python scripts/index_Qdrant.py
+    deps:
+      - scripts/index_Qdrant.py
+      - data/dataset_built/documents.jsonl
+      - data/dataset_built/images
+      - data/guidelines_txt
+
+  evaluate:
+    cmd: python scripts/evaluate_rag.py
+    deps:
+      - scripts/evaluate_rag.py
+      - scripts/index_Qdrant.py
+      - data/dataset_built/documents.jsonl
+      - data/dataset_built/images
+      - data/guidelines_txt
+      - data/evaluation/eval_queries.json
+    metrics:
+      - data/evaluations/eval_latest.json:
+          cache: false

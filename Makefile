@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-fast test-cov test-privacy lint format clean run build-dataset verify-anon start stop status
+.PHONY: help install install-dev test test-fast test-cov test-privacy lint format clean run build-dataset verify-anon start stop status evaluate mlflow-ui dvc-init dvc-repro
 
 help:  ## Show this help message
 	@echo "Available commands:"
@@ -71,6 +71,18 @@ rebuild-dataset:  ## Rebuild dataset (clean + build)
 
 verify-anon:  ## Verify dataset anonymization
 	python3 scripts/verify_anonymization.py
+
+evaluate:  ## Run RAG evaluation pipeline
+	python3 scripts/evaluate_rag.py
+
+mlflow-ui:  ## Start MLflow UI
+	mlflow ui --host 0.0.0.0 --port 5000
+
+dvc-init:  ## Initialize DVC in the repository
+	dvc init
+
+dvc-repro:  ## Reproduce the DVC pipeline
+	dvc repro
 
 start:  ## Full system startup (recommended)
 	./start.sh

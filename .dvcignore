@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.git/
+.DS_Store
+mlruns/
+qdrant_storage/
+data/current/
+data/temp_uploads/
