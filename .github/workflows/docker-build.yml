@@ -140,7 +140,9 @@ jobs:
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}
           subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
+          # Store provenance in GitHub Attestations instead of pushing OCI artifacts to GHCR.
+          # This avoids intermittent "OCIError: Error uploading artifact to container registry" failures.
+          push-to-registry: false
 
   docker-compose-test:
     name: Test Docker Compose Stack
