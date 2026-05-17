@@ -28,11 +28,14 @@ RUN apt-get update \
     && apt-get dist-upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
+# Non-root user for runtime
+RUN adduser --disabled-password --gecos '' appuser
+
 # Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 
 # Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
 
 # Ensure base tools (pip/setuptools) are patched in runtime image
 RUN pip install --no-cache-dir --upgrade pip setuptools
@@ -44,7 +47,10 @@ COPY scripts/ ./scripts/
 COPY data/ ./data/
 
 # Create directories for runtime data
-RUN mkdir -p data/current/dicom data/current/frames data/dataset_built
+RUN mkdir -p data/current/dicom data/current/frames data/dataset_built \
+    && chown -R appuser:appuser /app
+
+USER appuser
 
 # Expose port
 EXPOSE 8000

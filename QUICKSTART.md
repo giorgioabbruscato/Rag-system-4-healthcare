@@ -132,6 +132,13 @@ curl -X POST http://localhost:8000/analyze-case   -F "file=@/path/to/file.dcm"  
 - `GET /list-docs`
 - `POST /delete-doc`
 - `POST /flush-rag`
+- `GET /metrics` — Prometheus metrics (HTTP + RAG/DICOM counters)
+
+```bash
+curl -s http://localhost:8000/metrics | head
+```
+
+With Docker, enable the monitoring stack (`make monitoring-up`) for Prometheus (9090) and Grafana (3000). See [DOCKER.md](DOCKER.md#-monitoring-stack-optional).
 
 ## Quick test
 

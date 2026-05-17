@@ -131,6 +131,21 @@ class TestCORSHeaders:
         assert "access-control-allow-origin" in [h.lower() for h in response.headers] or response.status_code == 200
 
 
+class TestPrometheusMetrics:
+    """Test Prometheus metrics endpoint."""
+
+    def test_metrics_endpoint_exposed(self):
+        """Test that /metrics is available and returns Prometheus text format."""
+        response = client.get("/metrics")
+
+        assert response.status_code == 200
+        assert "text/plain" in response.headers.get("content-type", "")
+        body = response.text
+        assert "rag_retrieval_latency_seconds" in body
+        assert "rag_documents_retrieved_total" in body
+        assert "dicom_uploads_total" in body
+
+
 class TestHealthCheck:
     """Test general API health."""
     

@@ -10,6 +10,8 @@ from scripts.index_Qdrant import get_vectorstore, get_embedder
 
 from src.config import settings
 from src.logging_config import get_logger
+from src.metrics import observe_retrieval_latency, record_documents_retrieved
+
 logger = get_logger(__name__)
 
 # ----------------------------------
@@ -85,13 +87,14 @@ def retrieve_similar_qdrant(
     q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()[0]
     
     try:
-        # search in Qdrant (vector_name must match index_Qdrant.py)
-        hits = vectorstore.search(
-            collection_name=collection_name,
-            query_vector=q_emb,
-            vector_name="text_embedding",  # aligned with index_Qdrant.py
-            k=k
-        )
+        with observe_retrieval_latency():
+            hits = vectorstore.search(
+                collection_name=collection_name,
+                query_vector=q_emb,
+                vector_name="text_embedding",  # aligned with index_Qdrant.py
+                k=k
+            )
+        record_documents_retrieved(collection_name, len(hits))
     except Exception as e:
         logger.warning(f"Search failed for collection '{collection_name}'", error=str(e))
         hits = []

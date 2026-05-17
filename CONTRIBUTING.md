@@ -4,7 +4,7 @@ Thank you for your interest in contributing to this multimodal RAG system for cl
 
 ## Prerequisites
 
-- **Python**: >=3.10 (check with `python --version`)
+- **Python**: 3.10–3.12 (CI matrix); check with `python --version`
 - **Git**: For version control
 - **pip**: Python package manager
 - **OpenAI API Key**: Optional (for testing `/analyze-case` endpoint; set `OPENAI_API_KEY` in `.env`)
@@ -84,7 +84,8 @@ python -c "import src.config; import api.main; print('✓ Setup OK')"
 ├── tests/              # Pytest suite (target ≥80% coverage)
 ├── data/               # Dataset, guidelines, evaluations
 ├── docs/adr/           # Architecture Decision Records
-├── Makefile            # Task runner (test, lint, format, etc.)
+├── monitoring/         # Prometheus + Grafana (optional overlay)
+├── Makefile            # Task runner (test, lint, format, monitoring-up, etc.)
 └── pyproject.toml      # Project metadata & tool configs
 ```
 
@@ -231,6 +232,8 @@ test(evaluation): increase coverage to 85%
 
 ### 3. Ensure All Checks Pass
 
+CI enforces the same checks as pre-commit; lint failures **block** the pipeline (no `continue-on-error`).
+
 ```bash
 # Run pre-commit hooks
 pre-commit run --all-files
@@ -241,9 +244,18 @@ make test-cov
 # Run security scan
 make security
 
-# Run linting
+# Run linting (must pass before merge)
 make lint
 ```
+
+GitHub Actions on push/PR to `main` / `develop`:
+
+| Job | Workflow | Notes |
+|-----|----------|-------|
+| Tests | `ci.yml` | Matrix: Python 3.10, 3.11, 3.12 |
+| Lint | `ci.yml` | ruff, black, isort (blocking) |
+| Docker build + Trivy | `docker-build.yml` | Hadolint → build → fail on HIGH/CRITICAL |
+| Dependencies & secrets | `security-scan.yml` | pip-audit, Gitleaks, Bandit |
 
 ### 4. Push and Open PR
 
@@ -262,6 +274,22 @@ On GitHub:
 - Push additional commits (pre-commit will auto-check them)
 - Once approved, maintainer will merge to `main`
 - For durable architecture changes, add or update an ADR in `docs/adr/`
+
+## Releases
+
+Maintainers cut releases with a semver Git tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The `release.yml` workflow:
+
+1. Generates the release notes from git history using **git-cliff** (`cliff.toml`, Conventional Commits)
+2. Publishes a GitHub Release with that body
+
+The `docker-build.yml` workflow also builds and tags container images on the same `v*.*.*` tags.
 
 ## Development Workflows
 
@@ -310,7 +338,7 @@ Must include:
 
 ```bash
 # Python not found or wrong version?
-python3 --version  # Should be >=3.10
+python3 --version  # Should be 3.10, 3.11, or 3.12
 
 # Re-create venv
 rm -rf .venv
@@ -390,6 +418,8 @@ make clean            # Remove caches
 make run              # Start FastAPI server
 make evaluate         # Run RAG evaluation
 make mlflow-ui        # Start MLflow experiment tracker
+make monitoring-up  # Prometheus + Grafana (requires app running)
+make monitoring-down
 ```
 
 ### Useful Commands

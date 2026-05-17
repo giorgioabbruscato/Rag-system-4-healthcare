@@ -8,6 +8,8 @@ from src.config import settings
 import re
 
 from src.logging_config import get_logger
+from src.metrics import dicom_uploads
+
 logger = get_logger(__name__)
 
 DATA_DIR = Path("data")
@@ -76,6 +78,8 @@ async def save_current_dicom_and_extract_frames(file: UploadFile):
         logger.exception("Frame extraction failed", error=str(e), file_id=file_id)
         # If extraction fails, still return the base paths
         frames = []
+
+    dicom_uploads.inc()
 
     return {
         "file_id": file_id,

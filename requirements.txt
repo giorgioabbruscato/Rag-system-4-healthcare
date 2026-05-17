@@ -36,3 +36,4 @@ Docling >= 2.68.0
 structlog>=24.1.0
 slowapi>=0.1.9
 mlflow>=2.0.0
+prometheus-fastapi-instrumentator>=7.0.0

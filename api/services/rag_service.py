@@ -4,6 +4,8 @@ from typing import Dict, Any, Optional, List
 from scripts.index_Qdrant import get_vectorstore, get_embedder
 
 from src.logging_config import get_logger
+from src.metrics import observe_retrieval_latency, record_documents_retrieved
+
 logger = get_logger(__name__)
 
 # Import multimodal pipeline
@@ -41,12 +43,14 @@ def answer_question(
     # Retrieval based on rag_type
     if rag_type in ["cases", "hybrid", "multimodal"]:
         try:
-            hits = vectorstore.search(
-                collection_name="cases",
-                query_vector=query_emb,
-                vector_name="text_embedding",
-                k=5
-            )
+            with observe_retrieval_latency():
+                hits = vectorstore.search(
+                    collection_name="cases",
+                    query_vector=query_emb,
+                    vector_name="text_embedding",
+                    k=5
+                )
+            record_documents_retrieved("cases", len(hits))
             for hit in hits:
                 sources.append({
                     "type": "case",
@@ -58,15 +62,17 @@ def answer_question(
                 retrieved_context += f"\n[CASE {hit.id}]\n{hit.text}\n"
         except Exception as e:
             logger.exception("Error retrieving cases", error=str(e))
-    
+
     if rag_type in ["guidelines", "hybrid", "multimodal"]:
         try:
-            hits = vectorstore.search(
-                collection_name="guidelines",
-                query_vector=query_emb,
-                vector_name="text_embedding",
-                k=4
-            )
+            with observe_retrieval_latency():
+                hits = vectorstore.search(
+                    collection_name="guidelines",
+                    query_vector=query_emb,
+                    vector_name="text_embedding",
+                    k=4
+                )
+            record_documents_retrieved("guidelines", len(hits))
             for hit in hits:
                 sources.append({
                     "type": "guideline",

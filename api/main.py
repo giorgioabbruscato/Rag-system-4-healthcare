@@ -29,6 +29,7 @@ from pydantic import BaseModel
 from typing import Optional, Any, Dict, List
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from prometheus_fastapi_instrumentator import Instrumentator
 from src.config import settings
 # Load environment variables from .env file
 load_dotenv()
@@ -54,6 +55,8 @@ app.add_middleware(
       allow_methods=["GET", "POST", "DELETE"],
       allow_headers=["*"],
   )
+
+Instrumentator().instrument(app).expose(app)
 
 # The legacy `/chat` endpoint and related models removed (deprecated).
 

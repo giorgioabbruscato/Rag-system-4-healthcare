@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/giorgioabbruscato/Rag-system-4-healthcare/workflows/CI%20-%20Tests%20%26%20Quality/badge.svg)
 ![Security](https://github.com/giorgioabbruscato/Rag-system-4-healthcare/workflows/Security%20Scan/badge.svg)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Python](https://img.shields.io/badge/python-3.10--3.12-blue)
 ![Docker](https://img.shields.io/badge/docker-compose-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -12,7 +12,8 @@ Multimodal RAG (Retrieval-Augmented Generation) system for clinical decision sup
 
 - **Multimodal RAG**: Combines text retrieval + GPT-4o Vision for image-based clinical analysis.
 - **Privacy by Design**: Full GDPR/HIPAA compliant anonymization pipeline with automated verification.
-- **Production-grade Architecture**: FastAPI + Docker + CI/CD + security scanning + structured logging.
+- **Production-grade Architecture**: FastAPI + Docker + CI/CD + security scanning + structured logging + Prometheus metrics.
+- **Observability**: `/metrics` endpoint, custom RAG/DICOM counters, optional Prometheus + Grafana stack.
 - **MLOps Pipeline**: Experiment tracking (MLflow), data versioning (DVC), evaluation metrics.
 - **Comprehensive Testing**: Integration tests, contract tests, anonymization tests, and API test suite.
 
@@ -68,6 +69,26 @@ make docker-down
 
 📖 **Full API guide**: see [QUICKSTART.md](QUICKSTART.md)  
 📖 **Docker guide**: see [DOCKER.md](DOCKER.md)
+
+### Monitoring (optional)
+
+With the app running (`make docker-up` or `make start`), start Prometheus and Grafana:
+
+```bash
+make monitoring-up
+```
+
+| Service    | URL                         |
+|------------|-----------------------------|
+| Prometheus | http://localhost:9090     |
+| Grafana    | http://localhost:3000 (admin / admin) |
+| API metrics| http://localhost:8000/metrics |
+
+Grafana ships with a pre-provisioned **RAG Metrics** dashboard (`monitoring/grafana/dashboards/rag-metrics.json`).
+
+```bash
+make monitoring-down   # stop monitoring stack only
+```
 
 ## Architecture
 
@@ -175,8 +196,11 @@ Markdown snippet to use once added: `![Streamlit UI Demo](docs/images/streamlit-
 ## Structure
 
 ```
-├── api/main.py                    # FastAPI app
-├── src/vectorstore_manager.py     # Singleton Qdrant + auto-indexing
+├── api/main.py                    # FastAPI app (+ /metrics)
+├── src/
+│   ├── vectorstore_manager.py     # Singleton Qdrant + auto-indexing
+│   └── metrics.py                 # Prometheus counters/histograms
+├── monitoring/                    # Prometheus + Grafana config
 ├── scripts/
 │   ├── build_dataset.py           # DICOM → documents.jsonl
 │   └── multimodal_rag_openai.py   # Multimodal RAG pipeline
@@ -188,9 +212,20 @@ Markdown snippet to use once added: `![Streamlit UI Demo](docs/images/streamlit-
 └── rebuild_dataset.sh             # Rebuild dataset
 ```
 
+## CI/CD & releases
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | push/PR to `main`, `develop` | Tests (Python 3.10–3.12), ruff, black, isort |
+| `docker-build.yml` | push/PR to `main`, tags `v*.*.*` | Hadolint, build, Trivy (fail on HIGH/CRITICAL), GHCR push |
+| `security-scan.yml` | push/PR to `main` | pip-audit, Gitleaks, Bandit |
+| `release.yml` | tag `v*.*.*` | Changelog (git-cliff) + GitHub Release |
+
+Create a release by pushing a semver tag (e.g. `v1.0.0`); the changelog is generated from [Conventional Commits](https://www.conventionalcommits.org/) via `cliff.toml`.
+
 ## Requirements
 
-- Python 3.10+
+- Python 3.10–3.12 (CI matrix); 3.10+ supported locally
 - OpenAI API key
 - ~2GB RAM (embeddings + in-memory vectorstore)
 

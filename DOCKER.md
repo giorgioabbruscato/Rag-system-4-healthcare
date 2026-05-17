@@ -4,13 +4,15 @@ This project is fully containerized with Docker to ensure isolation and reproduc
 
 ## 🏗️ Architecture
 
-The system is composed of 3 separate containers:
+The system is composed of 3 core containers:
 
 1. **qdrant** - Vector database (official image)
-2. **api** - FastAPI backend (port 8000)
+2. **api** - FastAPI backend (port 8000), exposes `/metrics` for Prometheus
 3. **streamlit** - Streamlit frontend (port 8501)
 
 All containers communicate through the private Docker network `rag-network`.
+
+An optional **monitoring** overlay adds Prometheus (9090) and Grafana (3000); see [Monitoring stack](#-monitoring-stack-optional).
 
 ## 🚀 Quick Start
 
@@ -78,6 +80,38 @@ make docker-dev
 # Open shell in containers
 make docker-shell-api
 make docker-shell-streamlit
+
+# Monitoring (Prometheus + Grafana)
+make monitoring-up
+make monitoring-down
+```
+
+## 📈 Monitoring stack (optional)
+
+Start the application first, then attach the monitoring overlay:
+
+```bash
+make docker-up          # or make docker-up-build
+make monitoring-up
+```
+
+| Service    | URL | Notes |
+|------------|-----|-------|
+| Prometheus | http://localhost:9090 | Scrapes `api:8000/metrics` every 15s |
+| Grafana    | http://localhost:3000 | Default login: `admin` / `admin` |
+| API metrics| http://localhost:8000/metrics | Prometheus text format |
+
+**Exposed metrics** (see `src/metrics.py`):
+
+- `rag_retrieval_latency_seconds` — histogram of Qdrant retrieval time
+- `rag_documents_retrieved_total{collection}` — documents retrieved per collection
+- `dicom_uploads_total` — DICOM uploads via `/analyze-case` and `/upload-doc`
+- Standard HTTP metrics from `prometheus-fastapi-instrumentator` (latency, status codes)
+
+Grafana loads the **RAG Metrics** dashboard from `monitoring/grafana/dashboards/rag-metrics.json` (datasource provisioned in `monitoring/grafana/provisioning/`).
+
+```bash
+make monitoring-down    # stops Prometheus/Grafana only
 ```
 
 ## 🔧 Development mode
@@ -96,6 +130,7 @@ Images use **multi-stage builds** to optimize size:
 
 - **Builder stage**: installs dependencies with compilers
 - **Final stage**: Python slim runtime + application only
+- **API image**: runs as non-root user `appuser` (see `Dockerfile.api`)
 
 ### Image tags
 
@@ -198,13 +233,20 @@ curl http://localhost:8501/_stcore/health
 docker-compose down -v
 ```
 
-## 🔒 Security scanning
+## 🔒 Security scanning & CI
 
-CI/CD pipelines include:
+The `docker-build.yml` workflow runs on every push/PR to `main` and on version tags:
 
-- **Trivy**: container vulnerability scanning
-- **Docker Bench**: best-practice checks
-- **SARIF Upload**: results in GitHub Security
+1. **Hadolint** — lints `Dockerfile.api` and `Dockerfile.streamlit` before build
+2. **Build** — multi-stage images with GHA cache; PRs load images locally for integration tests
+3. **Trivy** — scans built images; **fails the job** on `HIGH` or `CRITICAL` vulnerabilities (`ignore-unfixed: true`)
+4. **On `main` push** — images pushed to GHCR + SARIF uploaded to GitHub Security tab
+
+Related workflows:
+
+- `ci.yml` — unit tests (Python 3.10, 3.11, 3.12); ruff, black, and isort are **blocking**
+- `security-scan.yml` — pip-audit, Gitleaks, Bandit
+- `release.yml` — on tag `v*.*.*`, generates changelog with [git-cliff](https://git-cliff.org/) and creates a GitHub Release
 
 ## 📐 Volumes and persistence
 

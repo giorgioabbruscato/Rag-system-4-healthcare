@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-fast test-cov test-privacy lint format clean run build-dataset verify-anon start stop status evaluate mlflow-ui dvc-init dvc-repro
+.PHONY: help install install-dev test test-fast test-cov test-privacy lint format clean run build-dataset verify-anon start stop status evaluate mlflow-ui dvc-init dvc-repro monitoring-up monitoring-down
 
 help:  ## Show this help message
 	@echo "Available commands:"
@@ -144,3 +144,9 @@ docker-shell-api:  ## Open shell in API container
 
 docker-shell-streamlit:  ## Open shell in Streamlit container
 	docker-compose exec streamlit /bin/bash
+
+monitoring-up:  ## Start monitoring stack
+	docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
+
+monitoring-down:  ## Stop monitoring stack
+	docker-compose -f docker-compose.yml -f docker-compose.monitoring.yml down

@@ -13,8 +13,25 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/rag-healthcare
 
 jobs:
+  dockerfile-lint:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint Dockerfile.api
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile.api
+
+      - name: Lint Dockerfile.streamlit
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile.streamlit
+
   build-and-push:
     name: Build and Push Docker Images
+    needs: dockerfile-lint
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -79,7 +96,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
-          load: ${{ github.event_name == 'pull_request' }}
+          load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -88,6 +105,19 @@ jobs:
           # Enable layer caching and optimize builds
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+
+      - name: Resolve image tag for scan
+        id: image
+        run: echo "tag=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1 | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Run Trivy (fail on HIGH/CRITICAL)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.tag }}
+          format: table
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
 
       - name: Export image tarball (PR)
         if: github.event_name == 'pull_request'
@@ -201,11 +231,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
       
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
