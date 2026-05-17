@@ -88,6 +88,8 @@ pre-commit:  ## Run pre-commit checks (lint + test + privacy)
 	@$(MAKE) test-privacy
 	@echo "✅ All pre-commit checks passed!"
 
+pre-commit: pre-commit run --all-files
+
 # Docker commands
 docker-build:  ## Build all Docker images
 	docker-compose build

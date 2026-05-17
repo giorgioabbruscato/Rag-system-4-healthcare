@@ -71,6 +71,12 @@ with tab1:
                         if evaluation:
                             with st.expander("📈 Evaluation"):
                                 st.json(evaluation)
+                elif r.status_code == 429:
+                    retry_after = r.headers.get("Retry-After")
+                    if retry_after:
+                        st.warning(f"⏳ Troppi tentativi di analisi. Riprova tra {retry_after} secondi.")
+                    else:
+                        st.warning("⏳ Troppi tentativi di analisi. Attendi un minuto e riprova.")
                 else:
                     st.error(f"❌ Error: {r.text}")
             except Exception as e:

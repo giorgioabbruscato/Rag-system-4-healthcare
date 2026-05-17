@@ -164,6 +164,52 @@ class TestFlushRagEndpoint:
         assert "ok" in data or "message" in data
 
 
+class TestAnalyzeCaseRateLimit:
+    """Test rate limiting for /analyze-case endpoint."""
+
+    def test_analyze_case_rate_limited(self, monkeypatch):
+        """Repeated requests should eventually return HTTP 429."""
+
+        async def stub_save_current_dicom_and_extract_frames(file):
+            return {
+                "file_id": "test-file-id",
+                "filename": "test.dcm",
+                "frames_dir": "data/current/frames/test-file-id",
+                "num_frames": 1,
+                "frames": ["frame_0001.jpg"],
+            }
+
+        def stub_analyze_current_case(report_text=None, frames_dir=None):
+            return {"ok": True, "answer": "stub-analysis", "sources": []}
+
+        monkeypatch.setattr(
+            "api.main.save_current_dicom_and_extract_frames",
+            stub_save_current_dicom_and_extract_frames,
+            raising=True,
+        )
+        monkeypatch.setattr(
+            "api.main.analyze_current_case",
+            stub_analyze_current_case,
+            raising=True,
+        )
+
+        got_429 = False
+        for _ in range(15):
+            response = client.post(
+                "/analyze-case",
+                files={"file": ("test.dcm", b"DICM-test", "application/dicom")},
+                data={"report_text": "test"},
+            )
+
+            if response.status_code == 429:
+                got_429 = True
+                break
+
+            assert response.status_code == 200
+
+        assert got_429, "Expected to hit rate limit and receive HTTP 429"
+
+
 class TestCORSHeaders:
     """Test CORS configuration."""
     

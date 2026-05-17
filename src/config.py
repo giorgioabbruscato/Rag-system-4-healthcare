@@ -8,6 +8,7 @@ class Settings(BaseSettings):
       api_host: str = "0.0.0.0"
       api_port: int = Field(8000, ge=1024, le=65535)
       allowed_origins: List[str] = ["http://localhost:8501"]
+      analyze_case_rate_limit: str = "10/minute"
       debug: bool = False
 
       # OpenAI
@@ -43,6 +44,10 @@ class Settings(BaseSettings):
       # Upload limits
       max_upload_size_mb: int = Field(100, gt=0)
 
-      model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+      model_config = {
+            "env_file": ".env",
+            "env_file_encoding": "utf-8",
+            "extra": "ignore",
+      }
 
 settings = Settings()

@@ -7,12 +7,17 @@
    source .venv/bin/activate
    ```
 
-2. **Set the OpenAI API key**:
+2. **Install dependencies (reproducible)**:
+  ```bash
+  pip install -r requirements.lock
+  ```
+
+3. **Set the OpenAI API key**:
    ```bash
    export OPENAI_API_KEY="sk-..."
    ```
 
-3. **Start the system**:
+4. **Start the system**:
    ```bash
    make start
    # or

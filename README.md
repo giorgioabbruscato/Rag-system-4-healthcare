@@ -113,6 +113,13 @@ curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal
 - OpenAI API key
 - ~2GB RAM (embeddings + in-memory vectorstore)
 
+### Dependency pinning (transitive only)
+
+For reproducible installs, use the lock file that pins transitive dependencies:
+
+- Install with the lock file: `pip install -r requirements.lock`
+- Update the lock file from direct requirements: `pip-compile requirements.in -o requirements.lock`
+
 ## Privacy Notice
 
 ⚠️ **Original DICOM files are NOT included** in this repository.
