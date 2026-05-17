@@ -1,6 +1,4 @@
-import os
-import sys
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, Optional
 from scripts.index_Qdrant import get_vectorstore, get_embedder
 
 from src.logging_config import get_logger

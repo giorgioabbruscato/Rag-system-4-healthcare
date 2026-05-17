@@ -76,7 +76,7 @@ def _ensure_collections_populated():
             try:
                 test = _vectorstore.search(
                     collection_name="cases",
-                    query_vector=[0.0] * EMBEDDING_DIM,
+                    query_vector=[0.0] * settings.embedding_dim,
                     vector_name="text_embedding",
                     k=1
                 )
@@ -154,7 +154,7 @@ def _index_cases():
     embeddings = local_embedder.embed(docs_text)
     
     # Add to Qdrant
-    logger.info(f"Adding documents to Qdrant...")
+    logger.info("Adding documents to Qdrant...")
     chunks = []
     for i in range(len(docs_text)):
         case_id = docs_metadata[i].get("case_id", f"unknown_{i}")
@@ -238,7 +238,7 @@ def _index_guidelines():
     embeddings = local_embedder.embed(docs_text)
     
     # Add to Qdrant
-    print(f"[IndexQdrant] Adding guidelines to Qdrant...")
+    print("[IndexQdrant] Adding guidelines to Qdrant...")
     chunks = []
     for i in range(len(docs_text)):
         doc_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"guideline_{i}"))

@@ -1,16 +1,15 @@
-import os
-import sys
 import base64
-from typing import List, Dict, Any, Optional, Tuple
+import os
+from typing import Any, Dict, List, Optional, Tuple
+
 from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-from scripts.index_Qdrant import get_vectorstore, get_embedder
-
+from openai import OpenAI
+from scripts.index_Qdrant import get_embedder, get_vectorstore
 from src.config import settings
 from src.logging_config import get_logger
 from src.metrics import observe_retrieval_latency, record_documents_retrieved
+
+load_dotenv()
 
 logger = get_logger(__name__)
 
@@ -29,8 +28,6 @@ MAX_QUERY_FRAMES = settings.max_query_frames
 MAX_SIMILAR_FRAMES_TOTAL = settings.max_similar_frames_total
 
 MODEL_VISION = settings.openai_model
-# OpenAI client from the official SDK
-from openai import OpenAI
 
 # Lazy-load client to avoid import-time errors when API key is not set
 _client = None

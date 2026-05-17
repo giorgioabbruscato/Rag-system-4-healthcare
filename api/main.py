@@ -1,10 +1,31 @@
 import os
 import uuid
-from starlette.middleware.base import BaseHTTPMiddleware
+from typing import Any, Dict, Optional
+
 import structlog
+from dotenv import load_dotenv
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from api.services.doc_service import (
+    delete_current_file,
+    list_current_files,
+    save_current_dicom_and_extract_frames,
+)
+from api.services.rag_service import analyze_current_case
+from scripts.index_Qdrant import get_vectorstore, reset_collections
+from src.config import settings
+from src.logging_config import get_logger
+
+load_dotenv()
+
+logger = get_logger(__name__)
+
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -24,23 +45,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Strict-Transport-Security"] = "max-age=31536000"
         return response
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from pydantic import BaseModel
-from typing import Optional, Any, Dict, List
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from prometheus_fastapi_instrumentator import Instrumentator
-from src.config import settings
-# Load environment variables from .env file
-load_dotenv()
-
-from api.services.doc_service import save_current_dicom_and_extract_frames, list_current_files, delete_current_file
-from api.services.rag_service import answer_question, analyze_current_case
-
-from scripts.index_Qdrant import reset_collections, get_vectorstore
-
-from src.logging_config import get_logger
-logger = get_logger(__name__)
 
 app = FastAPI()
 limiter = Limiter(key_func=get_remote_address)

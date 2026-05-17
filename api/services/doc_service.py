@@ -1,11 +1,12 @@
-import os
+import re
+import shutil
 import uuid
 from pathlib import Path
-from fastapi import UploadFile, HTTPException
-import sys
+
+from fastapi import HTTPException, UploadFile
+
 from scripts.dicom_to_frames_current import extract_frames
 from src.config import settings
-import re
 
 from src.logging_config import get_logger
 from src.metrics import dicom_uploads
@@ -23,8 +24,6 @@ def _ensure_dirs():
     CURRENT_DICOM_DIR.mkdir(parents=True, exist_ok=True)
     CURRENT_FRAMES_DIR.mkdir(parents=True, exist_ok=True)
 
-# New function: import all DICOM files from raw_data to current/dicom
-import shutil
 def import_all_rawdata_dicoms():
     """
     Copy all .dcm files from data/raw_data (recursively) to data/current/dicom/

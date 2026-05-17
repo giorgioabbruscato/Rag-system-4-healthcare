@@ -40,8 +40,7 @@ def check_metadata(meta, doc_id):
     for key, value in meta.items():
         if value is None:
             continue
-        val_str = str(value).lower()
-        
+
         # Check for date patterns (YYYYMMDD)
         if isinstance(value, str) and len(value) == 8 and value.isdigit():
             if int(value[:4]) > 1900 and int(value[:4]) < 2100:

@@ -208,7 +208,9 @@ def evaluate_retrieval(
 
     # Aggregate metrics
     if results:
-        avg = lambda key: sum(r[key] for r in results) / len(results)
+        def avg(key):
+            return sum(r[key] for r in results) / len(results)
+
         aggregate = {
             "num_queries": len(results),
             "mean_precision_at_k": avg("precision_at_k"),
