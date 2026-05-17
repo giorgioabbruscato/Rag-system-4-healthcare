@@ -36,8 +36,14 @@ COPY app/ ./app/
 COPY src/ ./src/
 
 # Streamlit configuration
-RUN mkdir -p /root/.streamlit
-RUN echo "[server]\nheadless = true\nport = 8501\nenableCORS = false\nenableXsrfProtection = false\n" > /root/.streamlit/config.toml
+RUN mkdir -p /root/.streamlit \
+    && printf '%s\n' \
+        '[server]' \
+        'headless = true' \
+        'port = 8501' \
+        'enableCORS = false' \
+        'enableXsrfProtection = false' \
+        > /root/.streamlit/config.toml
 
 # Expose port
 EXPOSE 8501
