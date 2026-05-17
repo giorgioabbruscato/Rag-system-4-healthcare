@@ -1,6 +1,20 @@
 # RAG System for Healthcare
 
+![CI](https://github.com/giorgioabbruscato/Rag-system-4-healthcare/workflows/CI%20-%20Tests%20%26%20Quality/badge.svg)
+![Security](https://github.com/giorgioabbruscato/Rag-system-4-healthcare/workflows/Security%20Scan/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Docker](https://img.shields.io/badge/docker-compose-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 Multimodal RAG (Retrieval-Augmented Generation) system for clinical decision support in cardiology. It combines DICOM echocardiography image analysis, semantic retrieval of similar cases and guidelines, and AI-assisted diagnostic responses.
+
+## ✨ Highlights
+
+- **Multimodal RAG**: Combines text retrieval + GPT-4o Vision for image-based clinical analysis.
+- **Privacy by Design**: Full GDPR/HIPAA compliant anonymization pipeline with automated verification.
+- **Production-grade Architecture**: FastAPI + Docker + CI/CD + security scanning + structured logging.
+- **MLOps Pipeline**: Experiment tracking (MLflow), data versioning (DVC), evaluation metrics.
+- **Comprehensive Testing**: Integration tests, contract tests, anonymization tests, and API test suite.
 
 > **📌 API Note**: The system is currently optimized for multimodal case analysis through `/analyze-case`. The generic `/chat` endpoint is temporarily disabled and will return in future releases.
 
@@ -57,6 +71,54 @@ make docker-down
 
 ## Architecture
 
+### System Flow (Mermaid)
+
+```mermaid
+graph LR
+  A[DICOM Files in data/raw_data] --> B[scripts/build_dataset.py]
+  B --> C[data/dataset_built/documents.jsonl + images]
+  C --> D[scripts/index_Qdrant.py]
+  G[Guidelines .txt in data/guidelines_txt] --> D
+  D --> E[Qdrant Vectorstore: cases + guidelines]
+
+  M[Streamlit UI] --> H[FastAPI API]
+  F[User Upload: DICOM + report_text] --> H
+  H --> I[doc_service.save_current_dicom_and_extract_frames]
+  I --> I1[validate_dicom_upload]
+  I --> I2[extract_frames]
+  I2 --> J[rag_service.analyze_current_case]
+  E --> J
+  J --> K[run_multimodal_rag]
+  K --> L[OpenAI GPT-4o Vision]
+  L --> N[Clinical Analysis JSON Response]
+```
+
+### `/analyze-case` Sequence (Mermaid)
+
+```mermaid
+sequenceDiagram
+  participant U as User/Streamlit
+  participant A as FastAPI /analyze-case
+  participant D as DocService
+  participant R as RAG Service
+  participant Q as Qdrant
+  participant O as OpenAI GPT-4o
+
+  U->>A: POST /analyze-case (file, report_text?)
+  A->>D: save_current_dicom_and_extract_frames(file)
+  D->>D: validate_dicom_upload(file)
+  D->>D: extract_frames(dicom_path, out_dir)
+  D-->>A: file_id, dicom_path, frames_dir, frames
+  A->>R: analyze_current_case(report_text, frames_dir)
+  R->>Q: search(cases, text_embedding)
+  R->>Q: search(guidelines, text_embedding)
+  Q-->>R: similar chunks + metadata
+  R->>O: run_multimodal_rag(report + frames + retrieved context)
+  O-->>R: clinical analysis
+  R-->>A: {ok, answer, frames_dir}
+  A-->>U: {ok, file_id, frames_dir, analysis}
+```
+
 ### Base Dataset (Auto-generated)
 - **26 cardiology cases** (DICOM files) → 286 indexed documents
   - Normal (10), normal variants (6), pathological cases (10)
@@ -83,6 +145,17 @@ curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal
 # Visit http://localhost:8000/docs
 ```
 
+## 🧠 Technical Decisions
+
+| Decision | Choice | Why |
+|---|---|---|
+| Vector DB | Qdrant (in-memory) | Fast, supports named vectors, easy Docker setup |
+| Embedding | all-MiniLM-L6-v2 | Good balance quality/speed, runs locally, no API needed |
+| LLM | GPT-4o | Strong multimodal capability for image+text clinical analysis |
+| Anonymization | Hash-based case IDs + DICOM tag stripping | GDPR/HIPAA compliant, deterministic |
+
+📚 Decision history and rationale: [docs/adr/README.md](docs/adr/README.md)
+
 ## Technical Details
 
 - **Embeddings**: SentenceTransformer `all-MiniLM-L6-v2` (384 dim, local, no API)
@@ -90,6 +163,14 @@ curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal
 - **LLM**: OpenAI GPT-4o with vision (multimodal)
 - **DICOM**: pydicom + PIL for frame extraction + metadata
 - **Backend**: FastAPI + Pydantic + CORS
+
+### UI Preview
+
+Add a fresh Streamlit screenshot or GIF captured from the local app (`http://localhost:8501`) and place it in `docs/images/`.
+
+Suggested filename: `docs/images/streamlit-ui.gif`
+
+Markdown snippet to use once added: `![Streamlit UI Demo](docs/images/streamlit-ui.gif)`
 
 ## Structure
 
@@ -109,7 +190,7 @@ curl -X POST http://localhost:8000/analyze-case   -F "file=@data/raw_data/Normal
 
 ## Requirements
 
-- Python 3.9+
+- Python 3.10+
 - OpenAI API key
 - ~2GB RAM (embeddings + in-memory vectorstore)
 

@@ -83,6 +83,7 @@ python -c "import src.config; import api.main; print('✓ Setup OK')"
 ├── app/                # Streamlit frontend
 ├── tests/              # Pytest suite (target ≥80% coverage)
 ├── data/               # Dataset, guidelines, evaluations
+├── docs/adr/           # Architecture Decision Records
 ├── Makefile            # Task runner (test, lint, format, etc.)
 └── pyproject.toml      # Project metadata & tool configs
 ```
@@ -260,6 +261,7 @@ On GitHub:
 - Respond to review comments
 - Push additional commits (pre-commit will auto-check them)
 - Once approved, maintainer will merge to `main`
+- For durable architecture changes, add or update an ADR in `docs/adr/`
 
 ## Development Workflows
 
