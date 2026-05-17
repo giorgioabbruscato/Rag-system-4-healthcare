@@ -34,6 +34,7 @@ COPY --from=builder /root/.local /root/.local
 
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
+ENV PYTHONPATH=/app
 
 # Ensure base tools (pip/setuptools) are patched in runtime image
 RUN pip install --no-cache-dir --upgrade pip setuptools
