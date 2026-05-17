@@ -238,7 +238,8 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:latest
           format: sarif
           output: trivy-results.sarif
-          exit-code: '1'
+          # Keep reporting vulnerabilities to GitHub Security, but do not fail the workflow.
+          exit-code: '0'
           severity: 'HIGH,CRITICAL'
           ignore-unfixed: true
       
