@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
-from scripts.index_Qdrant import get_vectorstore, get_embedder
 
+from scripts.index_Qdrant import get_embedder, get_vectorstore
 from src.logging_config import get_logger
 from src.metrics import observe_retrieval_latency, record_documents_retrieved
 
@@ -15,29 +15,25 @@ except Exception as e:
 
 
 def answer_question(
-    question: str,
-    model: str,
-    rag_type: str,
-    session_id: Optional[str],
-    evaluate: bool
+    question: str, model: str, rag_type: str, session_id: Optional[str], evaluate: bool
 ) -> Dict[str, Any]:
     """
     Handle the RAG query using the auto-indexed vectorstore.
-    
+
     - rag_type: "cases", "guidelines", "hybrid", "multimodal"
     - model: OpenAI model name (e.g., "gpt-4o")
     - evaluate: if True, compute metrics with ragas (optional)
     """
-    
+
     vectorstore = get_vectorstore()
     embedder = get_embedder()
-    
+
     # Embed query
     query_emb = embedder.encode([question], normalize_embeddings=True).tolist()[0]
-    
+
     sources = []
     retrieved_context = ""
-    
+
     # Retrieval based on rag_type
     if rag_type in ["cases", "hybrid", "multimodal"]:
         try:
@@ -46,17 +42,19 @@ def answer_question(
                     collection_name="cases",
                     query_vector=query_emb,
                     vector_name="text_embedding",
-                    k=5
+                    k=5,
                 )
             record_documents_retrieved("cases", len(hits))
             for hit in hits:
-                sources.append({
-                    "type": "case",
-                    "id": hit.id,
-                    "score": 0.0,  # score not available in Chunk objects from datapizza
-                    "snippet": hit.text[:200] + "...",
-                    "metadata": hit.metadata
-                })
+                sources.append(
+                    {
+                        "type": "case",
+                        "id": hit.id,
+                        "score": 0.0,  # score not available in Chunk objects from datapizza
+                        "snippet": hit.text[:200] + "...",
+                        "metadata": hit.metadata,
+                    }
+                )
                 retrieved_context += f"\n[CASE {hit.id}]\n{hit.text}\n"
         except Exception as e:
             logger.exception("Error retrieving cases", error=str(e))
@@ -68,21 +66,25 @@ def answer_question(
                     collection_name="guidelines",
                     query_vector=query_emb,
                     vector_name="text_embedding",
-                    k=4
+                    k=4,
                 )
             record_documents_retrieved("guidelines", len(hits))
             for hit in hits:
-                sources.append({
-                    "type": "guideline",
-                    "id": hit.id,
-                    "score": 0.0,  # score not available in Chunk objects from datapizza
-                    "snippet": hit.text[:200] + "...",
-                    "metadata": hit.metadata
-                })
-                retrieved_context += f"\n[GUIDELINE {hit.metadata.get('source', '?')}]\n{hit.text}\n"
+                sources.append(
+                    {
+                        "type": "guideline",
+                        "id": hit.id,
+                        "score": 0.0,  # score not available in Chunk objects from datapizza
+                        "snippet": hit.text[:200] + "...",
+                        "metadata": hit.metadata,
+                    }
+                )
+                retrieved_context += (
+                    f"\n[GUIDELINE {hit.metadata.get('source', '?')}]\n{hit.text}\n"
+                )
         except Exception as e:
             logger.exception("Error retrieving guidelines", error=str(e))
-    
+
     # Build answer (you can integrate OpenAI or another LLM here)
     # Simple stub for now
     if rag_type == "multimodal":
@@ -90,11 +92,11 @@ def answer_question(
         answer = f"[Multimodal RAG stub]\nQuery: {question}\n\nRetrieved {len(sources)} sources.\n\n{retrieved_context[:500]}..."
     else:
         answer = f"[RAG stub - {rag_type}]\nQuery: {question}\n\nRetrieved {len(sources)} sources.\n\n{retrieved_context[:500]}..."
-    
+
     evaluation_obj = None
     if evaluate:
         evaluation_obj = {"message": "Evaluation stub (integrate ragas here)"}
-    
+
     return {
         "answer": answer,
         "sources": sources,
@@ -104,8 +106,7 @@ def answer_question(
 
 
 def analyze_current_case(
-    report_text: Optional[str],
-    frames_dir: Optional[str]
+    report_text: Optional[str], frames_dir: Optional[str]
 ) -> Dict[str, Any]:
     """
     Run multimodal RAG using provided frames directory and a report_text.
@@ -125,7 +126,9 @@ def analyze_current_case(
         }
 
     try:
-        output_text = run_multimodal_rag(report_text=text, query_frames_folder=frames_dir)
+        output_text = run_multimodal_rag(
+            report_text=text, query_frames_folder=frames_dir
+        )
     except Exception as e:
         logger.exception("Multimodal RAG failed", error=str(e))
         return {"ok": False, "error": f"Multimodal RAG failed: {e}"}

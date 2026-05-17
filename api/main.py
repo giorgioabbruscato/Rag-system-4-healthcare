@@ -53,12 +53,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
-      CORSMiddleware,
-      allow_origins=settings.allowed_origins,
-      allow_credentials=True,
-      allow_methods=["GET", "POST", "DELETE"],
-      allow_headers=["*"],
-  )
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["*"],
+)
 
 Instrumentator().instrument(app).expose(app)
 
@@ -82,9 +82,12 @@ async def upload_doc(
         logger.warning("Failed to upload file", filename=file.filename, error=e.detail)
         raise e
     except Exception as e:
-        logger.exception("An unexpected error occurred during file upload", filename=file.filename, error=str(e))
+        logger.exception(
+            "An unexpected error occurred during file upload",
+            filename=file.filename,
+            error=str(e),
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 
 @app.post("/analyze-case")
@@ -92,7 +95,7 @@ async def upload_doc(
 async def analyze_case(
     request: Request,
     file: UploadFile = File(...),
-    report_text: Optional[str] = Form(None)
+    report_text: Optional[str] = Form(None),
 ):
     """
     POST /analyze-case
@@ -102,15 +105,20 @@ async def analyze_case(
     """
     try:
         result = await save_current_dicom_and_extract_frames(file)
-        analysis = analyze_current_case(report_text=report_text, frames_dir=result.get("frames_dir"))
+        analysis = analyze_current_case(
+            report_text=report_text, frames_dir=result.get("frames_dir")
+        )
         return {"ok": True, **result, "analysis": analysis}
     except HTTPException as e:
         logger.warning("Failed to analyze case", filename=file.filename, error=e.detail)
         raise e
     except Exception as e:
-        logger.exception("An unexpected error occurred during case analysis", filename=file.filename, error=str(e))
+        logger.exception(
+            "An unexpected error occurred during case analysis",
+            filename=file.filename,
+            error=str(e),
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 
 @app.get("/list-docs")
@@ -147,7 +155,6 @@ def health_check():
     return {"status": status, "checks": checks}
 
 
-
 @app.post("/delete-doc")
 def delete_doc(payload: Dict[str, Any]):
     """
@@ -163,9 +170,12 @@ def delete_doc(payload: Dict[str, Any]):
         logger.warning("Failed to delete file", file_id=file_id, error=e.detail)
         raise e
     except Exception as e:
-        logger.exception("An unexpected error occurred during file deletion", file_id=file_id, error=str(e))
+        logger.exception(
+            "An unexpected error occurred during file deletion",
+            file_id=file_id,
+            error=str(e),
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 
 @app.post("/flush-rag")

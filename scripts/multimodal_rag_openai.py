@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from dotenv import load_dotenv
 from openai import OpenAI
+
 from scripts.index_Qdrant import get_embedder, get_vectorstore
 from src.config import settings
 from src.logging_config import get_logger
@@ -32,12 +33,14 @@ MODEL_VISION = settings.openai_model
 # Lazy-load client to avoid import-time errors when API key is not set
 _client = None
 
+
 def get_openai_client() -> OpenAI:
     """Get or create the OpenAI client instance."""
     global _client
     if _client is None:
         _client = OpenAI()
     return _client
+
 
 # ----------------------------------
 # Helpers
@@ -50,52 +53,55 @@ def image_to_data_url(path: str) -> str:
     mime = "image/png" if path.lower().endswith(".png") else "image/jpeg"
     return f"data:{mime};base64,{b64}"
 
+
 def uniform_sample(items: List[str], n: int) -> List[str]:
     if n <= 0:
         return []
     if len(items) <= n:
         return items
     import numpy as np
+
     idxs = np.linspace(0, len(items) - 1, n, dtype=int)
     return [items[i] for i in idxs]
+
 
 def list_frames_in_folder(folder: Optional[str]) -> List[str]:
     if not folder or not os.path.isdir(folder):
         return []
     exts = (".png", ".jpg", ".jpeg")
     return sorted(
-        os.path.join(folder, f)
-        for f in os.listdir(folder)
-        if f.lower().endswith(exts)
+        os.path.join(folder, f) for f in os.listdir(folder) if f.lower().endswith(exts)
     )
+
 
 def pick_frames_for_case(case_id: str, n: int) -> List[str]:
     case_dir = os.path.join(settings.dataset_dir, "images", case_id)
     frames = list_frames_in_folder(case_dir)
     return uniform_sample(frames, n)
 
+
 def retrieve_similar_qdrant(
-    collection_name: str,
-    query_text: str,
-    k: int
+    collection_name: str, query_text: str, k: int
 ) -> Dict[str, Any]:
     """Retrieve similar documents from Qdrant collection."""
     # embed query
     q_emb = embedder.encode([query_text], normalize_embeddings=True).tolist()[0]
-    
+
     try:
         with observe_retrieval_latency():
             hits = vectorstore.search(
                 collection_name=collection_name,
                 query_vector=q_emb,
                 vector_name="text_embedding",  # aligned with index_Qdrant.py
-                k=k
+                k=k,
             )
         record_documents_retrieved(collection_name, len(hits))
     except Exception as e:
-        logger.warning(f"Search failed for collection '{collection_name}'", error=str(e))
+        logger.warning(
+            f"Search failed for collection '{collection_name}'", error=str(e)
+        )
         hits = []
-    
+
     # handle empty results
     if not hits:
         return {
@@ -104,7 +110,7 @@ def retrieve_similar_qdrant(
             "documents": [[]],
             "distances": [[]],
         }
-    
+
     # convert to a structure similar to Chroma
     # vectorstore.search returns list of Chunk objects with .id, .metadata, .text
     # Note: score is not available in Chunk objects from datapizza, use placeholder
@@ -115,14 +121,15 @@ def retrieve_similar_qdrant(
         "distances": [[0.0 for hit in hits]],  # score not available in Chunk objects
     }
 
+
 def knn_vote_labels(
     case_metas: List[Dict[str, Any]],
     case_dists: List[float],
     topn: int = 3,
-    min_score_threshold: float = 2.5
+    min_score_threshold: float = 2.5,
 ) -> List[Tuple[str, float]]:
     """Vote on diagnosis labels weighted by distance.
-    
+
     Args:
         case_metas: Metadata of retrieved cases
         case_dists: Distances of retrieved cases
@@ -131,22 +138,25 @@ def knn_vote_labels(
     """
     if not case_metas or not case_dists:
         return [("unknown", 0.0)]
-    
+
     scores: Dict[str, float] = {}
     for meta, dist in zip(case_metas, case_dists):
         lab = meta.get("diagnosis_label_raw", "unknown")
         # Weight inversely proportional to distance
         w = 1.0 / (1.0 + float(dist))
         scores[lab] = scores.get(lab, 0.0) + w
-    
+
     # Filter out weak candidates below threshold
-    scores = {lab: score for lab, score in scores.items() if score >= min_score_threshold}
-    
+    scores = {
+        lab: score for lab, score in scores.items() if score >= min_score_threshold
+    }
+
     if not scores:
         return [("insufficient_evidence", 0.0)]
-    
+
     ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     return ranked[:topn]
+
 
 # ----------------------------
 # Prompting
@@ -194,7 +204,6 @@ Output format:
 """
 
 
-
 def is_generic_report(report_text: str) -> bool:
     """Check if report is generic/minimal without specific clinical information."""
     generic_phrases = [
@@ -202,19 +211,20 @@ def is_generic_report(report_text: str) -> bool:
         "provide probable diagnosis",
         "analyze the case",
         "clinical analysis",
-        "echocardiography case"
+        "echocardiography case",
     ]
     text_lower = report_text.lower().strip()
-    
+
     # If report is very short or contains generic phrases, it's likely generic
     if len(text_lower) < 100 or any(phrase in text_lower for phrase in generic_phrases):
         return True
     return False
 
+
 def has_explicit_normal_findings(report_text: str) -> bool:
     """Check if report explicitly describes normal clinical findings."""
     text_lower = report_text.lower()
-    
+
     # Keywords indicating normal findings
     normal_indicators = [
         "no symptoms",
@@ -224,14 +234,15 @@ def has_explicit_normal_findings(report_text: str) -> bool:
         "normal limit",
         "unremarkable",
         "asymptomatic",
-        "normal physiological"
+        "normal physiological",
     ]
-    
+
     # Count how many normal indicators are present
     normal_count = sum(1 for indicator in normal_indicators if indicator in text_lower)
-    
+
     # If report has 2+ normal indicators and is detailed (>150 chars), likely explicit normal
     return normal_count >= 2 and len(text_lower) > 150
+
 
 def build_user_payload(
     report_text: str,
@@ -270,18 +281,18 @@ def build_user_payload(
             )
 
     diag_lines = "\n".join([f"- {lab}: score={sc:.3f}" for lab, sc in knn_candidates])
-    
+
     # Add context quality warning
     context_warning = ""
     has_explicit_normal = has_explicit_normal_findings(report_text)
-    
+
     if is_generic_report(report_text):
         context_warning = "\n⚠️ CRITICAL: Clinical report is generic/minimal with NO specific clinical findings.\n"
         context_warning += "   → Use LOW confidence. Consider 'Insufficient evidence' or 'possibly Normal' if no clear abnormalities.\n"
     elif has_explicit_normal:
         context_warning = "\n✅ NOTE: Clinical report contains explicit NORMAL findings (no symptoms, parameters within normal ranges).\n"
         context_warning += "   → If visual evidence shows no clear abnormalities, 'Normal echocardiogram' with MEDIUM-HIGH confidence is appropriate.\n"
-    
+
     max_knn_score = knn_candidates[0][1] if knn_candidates else 0.0
     if max_knn_score < 5.0 and max_knn_score > 0:
         severity = "marginal" if max_knn_score >= 3.0 else "low"
@@ -289,7 +300,9 @@ def build_user_payload(
         if has_explicit_normal:
             context_warning += "However, with explicit normal clinical findings, visual similarity is less critical.\n"
         else:
-            context_warning += "Visual similarity alone is insufficient for confident diagnosis.\n"
+            context_warning += (
+                "Visual similarity alone is insufficient for confident diagnosis.\n"
+            )
     elif max_knn_score < 3.0:
         context_warning += "\n⚠️ NOTE: KNN scores are very low, indicating weak visual similarity. Prefer 'insufficient evidence'.\n"
 
@@ -306,6 +319,7 @@ RETRIEVED GUIDELINES:
 {guides_block}
 """
 
+
 # ----------------------------------
 # Main pipeline
 # ----------------------------------
@@ -318,7 +332,9 @@ def run_multimodal_rag(
     # 1) Retrieve similar cases
     cases_res = retrieve_similar_qdrant("cases", report_text, TOPK_CASES)
     if not cases_res["ids"][0]:
-        logger.warning("No similar cases found. Check if 'cases' collection is populated.")
+        logger.warning(
+            "No similar cases found. Check if 'cases' collection is populated."
+        )
 
     # 2) Retrieve guidelines (optional)
     guides_res = retrieve_similar_qdrant("guidelines", report_text, TOPK_GUIDES)
@@ -330,33 +346,44 @@ def run_multimodal_rag(
     # If report is generic, require higher evidence
     is_generic = is_generic_report(report_text)
     threshold = 4.5 if is_generic else 2.5
-    
+
     knn_candidates = knn_vote_labels(
         cases_res["metadatas"][0],
         cases_res["distances"][0],
         topn=3,
-        min_score_threshold=threshold
+        min_score_threshold=threshold,
     )
-    
+
     # Additional check: even if threshold is passed, if score is marginal (<5.0) and report is generic,
     # treat as insufficient evidence to avoid over-diagnosis
-    top_score = knn_candidates[0][1] if knn_candidates and knn_candidates[0][0] != "insufficient_evidence" else 0.0
+    top_score = (
+        knn_candidates[0][1]
+        if knn_candidates and knn_candidates[0][0] != "insufficient_evidence"
+        else 0.0
+    )
     if is_generic and top_score < 5.0 and top_score > 0:
-        logger.info(f"Generic report with marginal KNN score ({top_score:.2f}). Treating as insufficient evidence.")
+        logger.info(
+            f"Generic report with marginal KNN score ({top_score:.2f}). Treating as insufficient evidence."
+        )
         knn_candidates = [("insufficient_evidence", top_score)] + knn_candidates[:2]
-    
+
     # If kNN returns "insufficient_evidence" or very low scores, check for "normal" in report
     if knn_candidates[0][0] in ["insufficient_evidence", "unknown"]:
         report_lower = report_text.lower()
-        has_normal_keywords = any(term in report_lower for term in ["normal", "no abnormalities", "unremarkable"])
+        has_normal_keywords = any(
+            term in report_lower
+            for term in ["normal", "no abnormalities", "unremarkable"]
+        )
         has_explicit_normal = has_explicit_normal_findings(report_text)
-        
+
         if has_normal_keywords or has_explicit_normal:
             # Give higher score if report explicitly describes normal findings
             score = 4.0 if has_explicit_normal else 2.0
             knn_candidates = [("normal_echo", score)] + knn_candidates[:2]
             if has_explicit_normal:
-                logger.info(f"Report has explicit normal findings. Score boosted to {score:.1f} for 'normal_echo' candidate.")
+                logger.info(
+                    f"Report has explicit normal findings. Score boosted to {score:.1f} for 'normal_echo' candidate."
+                )
 
     # 4) Frames
     if query_frame_paths is None:
@@ -392,6 +419,7 @@ def run_multimodal_rag(
     )
     return resp.output_text
 
+
 # ----------------------------------
 # CLI
 # ----------------------------------
@@ -407,7 +435,9 @@ if __name__ == "__main__":
     if not report:
         raise SystemExit("No report text provided.")
 
-    frames_folder = input("Optional: folder containing CURRENT exam frames (press Enter to skip): ").strip()
+    frames_folder = input(
+        "Optional: folder containing CURRENT exam frames (press Enter to skip): "
+    ).strip()
     frames_folder = frames_folder if frames_folder else None
 
     output = run_multimodal_rag(report_text=report, query_frames_folder=frames_folder)

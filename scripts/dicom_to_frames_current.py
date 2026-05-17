@@ -1,14 +1,16 @@
-import os
 import argparse
+import os
+
 import numpy as np
 import pydicom
-from pydicom.pixel_data_handlers.util import convert_color_space
 from PIL import Image
+from pydicom.pixel_data_handlers.util import convert_color_space
 
 from src.logging_config import get_logger, setup_logging
 
 setup_logging()
 logger = get_logger(__name__)
+
 
 def ensure_dir(path: str):
     os.makedirs(path, exist_ok=True)
@@ -33,7 +35,9 @@ def to_rgb_if_needed(ds, frame):
         try:
             return convert_color_space(frame, "YBR_FULL_422", "RGB")
         except Exception as e:
-            logger.warning("Color conversion failed, returning original frame", error=str(e))
+            logger.warning(
+                "Color conversion failed, returning original frame", error=str(e)
+            )
             return frame
     return frame
 
@@ -91,11 +95,15 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dicom", required=True, help="Path to input DICOM (.dcm)")
     ap.add_argument("--out", default=None, help="Output folder for sampled frames")
-    ap.add_argument("--n", type=int, default=12, help="Number of frames to sample (default 12)")
+    ap.add_argument(
+        "--n", type=int, default=12, help="Number of frames to sample (default 12)"
+    )
     args = ap.parse_args()
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    default_out = os.path.abspath(os.path.join(base_dir, "..", "data", "current_case_frames"))
+    default_out = os.path.abspath(
+        os.path.join(base_dir, "..", "data", "current_case_frames")
+    )
     out_dir = args.out if args.out else default_out
 
     extract_frames(args.dicom, out_dir, n_frames=args.n)

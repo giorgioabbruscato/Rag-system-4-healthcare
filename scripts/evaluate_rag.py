@@ -95,7 +95,9 @@ def load_evaluation_queries(
         json.JSONDecodeError: If queries file is not valid JSON
     """
     if queries_path is None:
-        queries_path = Path(__file__).parent.parent / "data" / "evaluation" / "eval_queries.json"
+        queries_path = (
+            Path(__file__).parent.parent / "data" / "evaluation" / "eval_queries.json"
+        )
     else:
         queries_path = Path(queries_path)
 
@@ -194,20 +196,23 @@ def evaluate_retrieval(
         r_at_k = recall_at_k(retrieved_ids, relevant_ids, k)
         mrr_score = mrr(retrieved_ids, relevant_ids)
 
-        results.append({
-            "query": query_text,
-            "expected_diagnosis_groups": q.get("expected_diagnosis_groups", []),
-            "expected_keywords": q.get("expected_keywords", []),
-            "num_relevant": len(relevant_ids),
-            "num_retrieved": len(retrieved_ids),
-            "precision_at_k": p_at_k,
-            "recall_at_k": r_at_k,
-            "mrr": mrr_score,
-            "retrieved_case_ids": retrieved_ids,
-        })
+        results.append(
+            {
+                "query": query_text,
+                "expected_diagnosis_groups": q.get("expected_diagnosis_groups", []),
+                "expected_keywords": q.get("expected_keywords", []),
+                "num_relevant": len(relevant_ids),
+                "num_retrieved": len(retrieved_ids),
+                "precision_at_k": p_at_k,
+                "recall_at_k": r_at_k,
+                "mrr": mrr_score,
+                "retrieved_case_ids": retrieved_ids,
+            }
+        )
 
     # Aggregate metrics
     if results:
+
         def avg(key):
             return sum(r[key] for r in results) / len(results)
 
@@ -225,7 +230,9 @@ def evaluate_retrieval(
             "mean_mrr": 0.0,
         }
 
-    logger.info(f"Evaluation complete. Mean Precision@{k}: {aggregate['mean_precision_at_k']:.3f}")
+    logger.info(
+        f"Evaluation complete. Mean Precision@{k}: {aggregate['mean_precision_at_k']:.3f}"
+    )
     logger.info(f"Mean Recall@{k}: {aggregate['mean_recall_at_k']:.3f}")
     logger.info(f"Mean MRR: {aggregate['mean_mrr']:.3f}")
 
@@ -286,12 +293,12 @@ def main():
     """
     # Import here to avoid hard dependency when script is imported as module
     try:
-        from scripts.index_Qdrant import get_vectorstore
         from sentence_transformers import SentenceTransformer
+
+        from scripts.index_Qdrant import get_vectorstore
     except ImportError as e:
         logger.error(
-            f"Missing dependency: {e}. "
-            "Install with: pip install -r requirements.txt"
+            f"Missing dependency: {e}. " "Install with: pip install -r requirements.txt"
         )
         return
 

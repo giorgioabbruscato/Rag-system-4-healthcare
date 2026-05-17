@@ -63,7 +63,9 @@ def run_experiment(
 
         # Metrics
         aggregate = eval_results.get("aggregate", {})
-        mlflow.log_metric("mean_precision_at_k", aggregate.get("mean_precision_at_k", 0.0))
+        mlflow.log_metric(
+            "mean_precision_at_k", aggregate.get("mean_precision_at_k", 0.0)
+        )
         mlflow.log_metric("mean_recall_at_k", aggregate.get("mean_recall_at_k", 0.0))
         mlflow.log_metric("mean_mrr", aggregate.get("mean_mrr", 0.0))
         mlflow.log_metric("num_queries", aggregate.get("num_queries", 0))
@@ -75,7 +77,11 @@ def run_experiment(
             mlflow.log_artifact(str(latest_path))
         mlflow.log_artifact(str(results_path))
 
-        logger.info("MLflow run completed", run_name=run_name, run_id=mlflow.active_run().info.run_id)
+        logger.info(
+            "MLflow run completed",
+            run_name=run_name,
+            run_id=mlflow.active_run().info.run_id,
+        )
 
     return results_path
 

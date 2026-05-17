@@ -1,8 +1,9 @@
-import os
 import glob
-from sentence_transformers import SentenceTransformer
+import os
+
 from datapizza.core.vectorstore import VectorConfig
 from datapizza.vectorstores.qdrant import QdrantVectorstore
+from sentence_transformers import SentenceTransformer
 
 from src.logging_config import get_logger, setup_logging
 
@@ -14,15 +15,14 @@ logger = get_logger(__name__)
 # -----------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-GUIDELINES_DIR = os.path.abspath(
-    os.path.join(BASE_DIR, "..", "data", "guidelines_txt")
-)
+GUIDELINES_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "data", "guidelines_txt"))
 
 # -----------------------------
 # Models
 # -----------------------------
 EMB_MODEL = "all-MiniLM-L6-v2"
 embedder_local = SentenceTransformer(EMB_MODEL)
+
 
 # -----------------------------
 # Chunking
@@ -35,6 +35,7 @@ def chunk_text(text, chunk_size=800, overlap=150):
         chunks.append(text[start:end])
         start = end - overlap
     return chunks
+
 
 # -----------------------------
 # SETUP: Qdrant Vectorstore
@@ -55,10 +56,8 @@ try:
 except Exception:
     pass
 
-vectorstore.create_collection(
-    collection_name="guidelines",
-    vector_config=vector_config
-)
+vectorstore.create_collection(collection_name="guidelines", vector_config=vector_config)
+
 
 # --- EMBEDDING (local) ---
 # defines an adapter that takes text and generates embeddings
@@ -67,6 +66,7 @@ class LocalEmbedder:
     def embed(self, texts: list[str]) -> list[list[float]]:
         # normalize_embeddings=True as in your Chroma script
         return embedder_local.encode(texts, normalize_embeddings=True).tolist()
+
 
 local_embedder = LocalEmbedder()
 
@@ -94,11 +94,7 @@ for path in glob.glob(os.path.join(GUIDELINES_DIR, "*.txt")):
         doc_id = f"guideline_{idx}"
 
         documents.append(chunk)
-        metadatas.append({
-            "source": fname,
-            "chunk_id": j,
-            "document_type": "guideline"
-        })
+        metadatas.append({"source": fname, "chunk_id": j, "document_type": "guideline"})
         ids.append(doc_id)
         idx += 1
 
@@ -114,7 +110,7 @@ vectorstore.add(
     embeddings=embeddings,
     metadatas=metadatas,
     ids=ids,
-    embedding_name="text_embeddings"
+    embedding_name="text_embeddings",
 )
 
 logger.info("Done.")
