@@ -35,8 +35,17 @@ RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Base image system site-packages are scanned by Trivy (separate from builder /root/.local)
+RUN python -m pip install --no-cache-dir --upgrade \
+        setuptools==82.0.1 \
+        'wheel>=0.46.2'
+
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
+
+# Ensure copied user site-packages also have patched toolchain (Trivy scans all dist-info)
+RUN python -m pip install --no-cache-dir --user \
+        --upgrade setuptools==82.0.1 'wheel>=0.46.2'
 
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH

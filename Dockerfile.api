@@ -34,11 +34,21 @@ RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Base image system site-packages are scanned by Trivy (separate from builder /root/.local)
+RUN python -m pip install --no-cache-dir --upgrade \
+        setuptools==82.0.1 \
+        'wheel>=0.46.2'
+
 # Non-root user for runtime
 RUN adduser --disabled-password --gecos '' appuser
 
 # Copy Python packages from builder
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+
+# Ensure app user site-packages also have patched toolchain (Trivy scans all dist-info)
+RUN PYTHONUSERBASE=/home/appuser/.local python -m pip install --no-cache-dir --user \
+        --upgrade setuptools==82.0.1 'wheel>=0.46.2' \
+    && chown -R appuser:appuser /home/appuser/.local
 
 # Make sure scripts in .local are usable
 ENV PATH=/home/appuser/.local/bin:$PATH
