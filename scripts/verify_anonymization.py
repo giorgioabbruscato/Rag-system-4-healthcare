@@ -5,13 +5,12 @@ Checks for any remaining sensitive patient data.
 """
 
 import json
+import logging
 import os
 import sys
 
-from src.logging_config import get_logger, setup_logging
-
-setup_logging()
-logger = get_logger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 JSONL_PATH = os.path.join(BASE_DIR, "data", "dataset_built", "documents.jsonl")
