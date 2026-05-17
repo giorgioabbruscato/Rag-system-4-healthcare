@@ -14,9 +14,14 @@ RUN apt-get update \
 # Copy requirements
 COPY requirements.txt .
 
-# Upgrade pip/setuptools (pulls patched jaraco.context) and install dependencies
-RUN pip install --no-cache-dir pip==24.3.1 setuptools==75.8.2 \
-    && pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
+# Upgrade build toolchain (setuptools 82+ vendors jaraco.context 6.1.0; wheel CVE fix)
+RUN pip install --no-cache-dir \
+        pip==24.3.1 \
+        setuptools==82.0.1 \
+        'wheel>=0.46.2' \
+    && pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt \
+    && pip install --no-cache-dir --no-warn-script-location --user \
+        --upgrade setuptools==82.0.1 'wheel>=0.46.2'
 
 # Final stage
 FROM python:3.11-slim
