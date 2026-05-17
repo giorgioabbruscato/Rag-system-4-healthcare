@@ -28,27 +28,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Apply Debian security updates (libcap2, systemd/udev, etc.)
+# Debian security updates, patch system Python for Trivy, create runtime user
 # hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# Base image system site-packages are scanned by Trivy (separate from builder /root/.local)
-RUN python -m pip install --no-cache-dir --upgrade \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip install --no-cache-dir --upgrade \
         setuptools==82.0.1 \
-        'wheel>=0.46.2'
-
-# Non-root user for runtime
-RUN adduser --disabled-password --gecos '' appuser
+        'wheel>=0.46.2' \
+    && adduser --disabled-password --gecos '' appuser
 
 # Copy Python packages from builder
 COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
-
-# Ensure app user site-packages also have patched toolchain (Trivy scans all dist-info)
-RUN PYTHONUSERBASE=/home/appuser/.local python -m pip install --no-cache-dir --user \
-        --upgrade setuptools==82.0.1 'wheel>=0.46.2' \
-    && chown -R appuser:appuser /home/appuser/.local
 
 # Make sure scripts in .local are usable
 ENV PATH=/home/appuser/.local/bin:$PATH
@@ -59,8 +50,11 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY data/ ./data/
 
-# Create directories for runtime data
-RUN mkdir -p data/current/dicom data/current/frames data/dataset_built \
+# Patch app user site-packages for Trivy and prepare runtime directories
+RUN PYTHONUSERBASE=/home/appuser/.local python -m pip install --no-cache-dir --user \
+        --upgrade setuptools==82.0.1 'wheel>=0.46.2' \
+    && chown -R appuser:appuser /home/appuser/.local \
+    && mkdir -p data/current/dicom data/current/frames data/dataset_built \
     && chown -R appuser:appuser /app
 
 USER appuser

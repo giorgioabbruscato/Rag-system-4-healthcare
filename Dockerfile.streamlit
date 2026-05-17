@@ -29,23 +29,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Apply Debian security updates (libcap2, systemd/udev, etc.)
+# Debian security updates and patch system Python for Trivy
 # hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# Base image system site-packages are scanned by Trivy (separate from builder /root/.local)
-RUN python -m pip install --no-cache-dir --upgrade \
+    && rm -rf /var/lib/apt/lists/* \
+    && python -m pip install --no-cache-dir --upgrade \
         setuptools==82.0.1 \
         'wheel>=0.46.2'
 
 # Copy Python packages from builder
 COPY --from=builder /root/.local /root/.local
-
-# Ensure copied user site-packages also have patched toolchain (Trivy scans all dist-info)
-RUN python -m pip install --no-cache-dir --user \
-        --upgrade setuptools==82.0.1 'wheel>=0.46.2'
 
 # Make sure scripts in .local are usable
 ENV PATH=/root/.local/bin:$PATH
@@ -55,8 +49,10 @@ ENV PYTHONPATH=/app
 COPY app/ ./app/
 COPY src/ ./src/
 
-# Streamlit configuration
-RUN mkdir -p /root/.streamlit \
+# Patch user site-packages for Trivy and configure Streamlit
+RUN python -m pip install --no-cache-dir --user \
+        --upgrade setuptools==82.0.1 'wheel>=0.46.2' \
+    && mkdir -p /root/.streamlit \
     && printf '%s\n' \
         '[server]' \
         'headless = true' \
